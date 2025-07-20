@@ -8,7 +8,7 @@ resource "azurerm_public_ip" "app_gateway" {
   location            = azurerm_resource_group.main.location
   allocation_method   = "Static"
   sku                 = "Standard"
-  zones               = ["1", "2", "3"]
+  zones               = ["1"]
   tags                = local.common_tags
 }
 
@@ -21,7 +21,6 @@ resource "azurerm_application_gateway" "main" {
   sku {
     name     = "WAF_v2"
     tier     = "WAF_v2"
-    capacity = 2
   }
 
   waf_configuration {
@@ -173,7 +172,7 @@ resource "azurerm_application_gateway" "main" {
     max_capacity = 10
   }
 
-  zones = ["1", "2", "3"]
+  zones = ["1"]
   tags  = local.common_tags
 
   # Implicit dependency through SSL certificate reference

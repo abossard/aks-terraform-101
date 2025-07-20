@@ -4,8 +4,8 @@
 # Core Configuration
 environment   = "prod"
 project      = "aks101"
-location     = "East US"
-location_code = "eus"
+location     = "East US 2"
+location_code = "eus2"
 
 # Network Configuration
 vnet_address_space = "10.240.0.0/16"
@@ -48,4 +48,5 @@ tags = {
   Environment = "production"
   Owner       = "anbossar"
   Demo        = "true"
+  Location    = "East US 2"
 }

@@ -137,7 +137,7 @@ resource "azurerm_storage_account" "main" {
   }
 
   blob_properties {
-    versioning_enabled = true
+    versioning_enabled = false
     delete_retention_policy {
       days = 7
     }

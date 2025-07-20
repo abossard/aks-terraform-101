@@ -485,3 +485,4 @@ $RECYCLE.BIN/
 .terraform*
 *.tfstate
 infra/terraform.tfstate
+infra/terraform.tfstate.backup

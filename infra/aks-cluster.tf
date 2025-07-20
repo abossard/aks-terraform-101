@@ -45,7 +45,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     node_count     = var.node_count
     vm_size        = var.node_vm_size
     vnet_subnet_id = azurerm_subnet.aks.id
-    zones          = ["1", "2", "3"]
+    zones          = ["1"]
 
     auto_scaling_enabled = true
     min_count            = var.min_node_count
