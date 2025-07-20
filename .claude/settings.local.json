@@ -7,7 +7,11 @@
       "WebFetch(domain:learn.microsoft.com)",
       "WebFetch(domain:learn.microsoft.com)",
       "WebFetch(domain:medium.com)",
-      "WebFetch(domain:stackoverflow.com)"
+      "WebFetch(domain:stackoverflow.com)",
+      "WebFetch(domain:surajblog.medium.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(terraform fmt:*)",
+      "Bash(terraform:*)"
     ],
     "deny": []
   }
