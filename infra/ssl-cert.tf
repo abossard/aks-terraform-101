@@ -42,8 +42,6 @@ resource "azurerm_key_vault_certificate" "app_gateway" {
     password = var.ssl_cert_password != "" ? var.ssl_cert_password : "demo123!"
   }
 
-  depends_on = [
-    azurerm_private_endpoint.key_vault,
-    azurerm_role_assignment.workload_identity_key_vault
-  ]
+  # Need explicit dependency since Key Vault is private and needs endpoint ready  
+  depends_on = [azurerm_private_endpoint.key_vault]
 }

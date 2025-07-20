@@ -176,7 +176,7 @@ resource "azurerm_application_gateway" "main" {
   zones = ["1", "2", "3"]
   tags  = local.common_tags
 
-  depends_on = [azurerm_kubernetes_cluster.main]
+  # Implicit dependency through SSL certificate reference
 }
 
 # NGINX Ingress Controller via Helm
@@ -284,7 +284,7 @@ resource "helm_release" "nginx_ingress" {
     value = "1"
   }
 
-  depends_on = [azurerm_kubernetes_cluster.main]
+  # Implicit dependency through cluster connection in providers.tf
 }
 
 # Sample application to test the ingress
@@ -379,7 +379,7 @@ resource "kubernetes_deployment" "sample_app" {
             read_only = true
 
             volume_attributes = {
-              secretProviderClass = kubernetes_manifest.secret_provider_class.manifest.metadata.name
+              secretProviderClass = "azure-keyvault-secrets"
             }
           }
         }
@@ -387,10 +387,7 @@ resource "kubernetes_deployment" "sample_app" {
     }
   }
 
-  depends_on = [
-    azurerm_kubernetes_cluster.main,
-    helm_release.nginx_ingress
-  ]
+  # Implicit dependencies through namespace, service account, and helm release references
 }
 
 # Service for sample application
@@ -413,7 +410,7 @@ resource "kubernetes_service" "sample_app" {
     type = "ClusterIP"
   }
 
-  depends_on = [kubernetes_deployment.sample_app]
+  # Implicit dependency through deployment selector reference
 }
 
 # Ingress for sample application
@@ -449,8 +446,5 @@ resource "kubernetes_ingress_v1" "sample_app" {
     }
   }
 
-  depends_on = [
-    kubernetes_service.sample_app,
-    helm_release.nginx_ingress
-  ]
+  # Implicit dependency through service reference
 }

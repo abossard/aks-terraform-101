@@ -11,7 +11,10 @@
       "WebFetch(domain:surajblog.medium.com)",
       "WebFetch(domain:github.com)",
       "Bash(terraform fmt:*)",
-      "Bash(terraform:*)"
+      "Bash(terraform:*)",
+      "Bash(az version:*)",
+      "Bash(az account:*)",
+      "Bash(az ad signed-in-user show:*)"
     ],
     "deny": []
   }

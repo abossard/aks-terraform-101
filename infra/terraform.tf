@@ -27,6 +27,10 @@ terraform {
       source  = "chilicat/pkcs12"
       version = "~> 0.0.7"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
   }
 }
 
@@ -43,21 +47,21 @@ provider "azurerm" {
   }
 }
 
-# Configure Kubernetes Provider
+# Configure Kubernetes Provider with conditional configuration
 provider "kubernetes" {
-  host                   = azurerm_kubernetes_cluster.main.kube_config[0].host
-  client_certificate     = base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_certificate)
-  client_key             = base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_key)
-  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate)
+  host                   = try(azurerm_kubernetes_cluster.main.kube_config[0].host, null)
+  client_certificate     = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_certificate), null)
+  client_key             = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_key), null)
+  cluster_ca_certificate = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate), null)
 }
 
-# Configure Helm Provider
+# Configure Helm Provider with conditional configuration
 provider "helm" {
   kubernetes {
-    host                   = azurerm_kubernetes_cluster.main.kube_config[0].host
-    client_certificate     = base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_certificate)
-    client_key             = base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_key)
-    cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate)
+    host                   = try(azurerm_kubernetes_cluster.main.kube_config[0].host, null)
+    client_certificate     = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_certificate), null)
+    client_key             = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_key), null)
+    cluster_ca_certificate = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate), null)
   }
 }
 

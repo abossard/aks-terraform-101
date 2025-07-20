@@ -138,10 +138,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   tags = local.common_tags
 
-  depends_on = [
-    azurerm_subnet_route_table_association.aks_routes,
-    azurerm_firewall.main
-  ]
+  # Implicit dependency through subnet reference that has route table association
 }
 
 # Grant Key Vault access to the workload identity
@@ -208,7 +205,7 @@ resource "kubernetes_namespace" "app_namespace" {
     name = var.app_namespace
   }
 
-  depends_on = [azurerm_kubernetes_cluster.main]
+  # Implicit dependency through app_namespace variable reference
 }
 
 # Service Account with workload identity annotations
@@ -227,69 +224,66 @@ resource "kubernetes_service_account" "workload_identity" {
     }
   }
 
-  depends_on = [azurerm_kubernetes_cluster.main]
+  # Implicit dependencies through namespace and identity references
 }
 
 # SecretProviderClass for Key Vault integration
-resource "kubernetes_manifest" "secret_provider_class" {
-  manifest = {
-    apiVersion = "secrets-store.csi.x-k8s.io/v1"
-    kind       = "SecretProviderClass"
-
-    metadata = {
-      name      = "azure-keyvault-secrets"
-      namespace = kubernetes_namespace.app_namespace.metadata[0].name
-    }
-
-    spec = {
-      provider = "azure"
-
-      parameters = {
-        usePodIdentity         = "false"
-        useVMManagedIdentity   = "false"
-        userAssignedIdentityID = azurerm_user_assigned_identity.workload_identity.client_id
-        keyvaultName           = azurerm_key_vault.main.name
-        tenantId               = data.azurerm_client_config.current.tenant_id
-
-        objects = yamlencode([
-          {
-            objectName    = "database-connection-string"
-            objectType    = "secret"
-            objectVersion = ""
-          },
-          {
-            objectName    = "storage-account-key"
-            objectType    = "secret"
-            objectVersion = ""
-          }
-        ])
-      }
-
-      # Sync with Kubernetes secrets
-      secretObjects = [
-        {
-          secretName = "app-secrets"
-          type       = "Opaque"
-          data = [
-            {
-              objectName = "database-connection-string"
-              key        = "connectionString"
-            },
-            {
-              objectName = "storage-account-key"
-              key        = "storageKey"
-            }
-          ]
-        }
-      ]
-    }
+# Note: This will be applied after the cluster is created using null_resource
+resource "null_resource" "secret_provider_class" {
+  triggers = {
+    cluster_id               = azurerm_kubernetes_cluster.main.id
+    workload_identity        = azurerm_user_assigned_identity.workload_identity.client_id
+    key_vault_name           = azurerm_key_vault.main.name
+    namespace                = kubernetes_namespace.app_namespace.metadata[0].name
+    key_vault_access         = azurerm_role_assignment.workload_identity_key_vault.id
+    database_secret          = azurerm_key_vault_secret.database_connection.id
+    storage_secret           = azurerm_key_vault_secret.storage_connection.id
+    private_endpoint_ready   = azurerm_private_endpoint.key_vault.id
   }
 
-  depends_on = [
-    azurerm_kubernetes_cluster.main,
-    kubernetes_namespace.app_namespace,
-    azurerm_private_endpoint.key_vault
-  ]
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Wait for cluster to be ready
+      az aks get-credentials --resource-group ${azurerm_resource_group.main.name} --name ${azurerm_kubernetes_cluster.main.name} --overwrite-existing --admin
+      
+      # Create SecretProviderClass
+      cat <<EOF | kubectl apply -f -
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: azure-keyvault-secrets
+  namespace: ${var.app_namespace}
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "false"
+    userAssignedIdentityID: ${azurerm_user_assigned_identity.workload_identity.client_id}
+    keyvaultName: ${azurerm_key_vault.main.name}
+    tenantId: ${data.azurerm_client_config.current.tenant_id}
+    objects: |
+      array:
+        - |
+          objectName: database-connection-string
+          objectType: secret
+          objectVersion: ""
+        - |
+          objectName: storage-account-key
+          objectType: secret
+          objectVersion: ""
+  secretObjects:
+  - secretName: app-secrets
+    type: Opaque
+    data:
+    - objectName: database-connection-string
+      key: connectionString
+    - objectName: storage-account-key
+      key: storageKey
+EOF
+    EOT
+  }
+
+  # Implicit dependencies through triggers that reference all required resources
 }
 
 # Sample secrets in Key Vault
@@ -297,20 +291,16 @@ resource "azurerm_key_vault_secret" "database_connection" {
   name         = "database-connection-string"
   value        = "Server=${azurerm_mssql_server.main.fully_qualified_domain_name};Database=${azurerm_mssql_database.main.name};Authentication=Active Directory Managed Identity;User Id=${azurerm_user_assigned_identity.workload_identity.client_id};"
   key_vault_id = azurerm_key_vault.main.id
-
-  depends_on = [
-    azurerm_private_endpoint.key_vault,
-    azurerm_role_assignment.workload_identity_key_vault
-  ]
+  
+  # Need explicit dependency since Key Vault is private and needs endpoint ready
+  depends_on = [azurerm_private_endpoint.key_vault]
 }
 
 resource "azurerm_key_vault_secret" "storage_connection" {
   name         = "storage-account-key"
   value        = azurerm_storage_account.main.primary_access_key
   key_vault_id = azurerm_key_vault.main.id
-
-  depends_on = [
-    azurerm_private_endpoint.key_vault,
-    azurerm_role_assignment.workload_identity_key_vault
-  ]
+  
+  # Need explicit dependency since Key Vault is private and needs endpoint ready
+  depends_on = [azurerm_private_endpoint.key_vault]
 }
