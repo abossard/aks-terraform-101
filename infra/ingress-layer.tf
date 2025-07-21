@@ -12,6 +12,21 @@ resource "azurerm_public_ip" "app_gateway" {
   tags                = local.common_tags
 }
 
+# User-Assigned Managed Identity for Application Gateway
+resource "azurerm_user_assigned_identity" "app_gateway" {
+  name                = "id-agw-${var.environment}-${var.location_code}-001"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.common_tags
+}
+
+# Grant Application Gateway identity access to Key Vault
+resource "azurerm_role_assignment" "app_gateway_key_vault" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.app_gateway.principal_id
+}
+
 # Application Gateway
 resource "azurerm_application_gateway" "main" {
   name                = local.app_gateway_name
@@ -135,10 +150,11 @@ resource "azurerm_application_gateway" "main" {
     ssl_certificate_name           = "app-gateway-ssl-cert"
   }
 
-  # SSL Certificate from Key Vault (recommended for production)
+  # SSL Certificate from PKCS#12 data (demo setup)
   ssl_certificate {
-    name                = "app-gateway-ssl-cert"
-    key_vault_secret_id = "${azurerm_key_vault.main.vault_uri}secrets/ssl-certificate"
+    name     = "app-gateway-ssl-cert"
+    data     = pkcs12_from_pem.app_gateway.result
+    password = var.ssl_cert_password != "" ? var.ssl_cert_password : "demo123!"
   }
 
   # Redirect HTTP to HTTPS
@@ -175,275 +191,16 @@ resource "azurerm_application_gateway" "main" {
   zones = ["1"]
   tags  = local.common_tags
 
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.app_gateway.id]
+  }
+
   # Implicit dependency through SSL certificate reference
 }
 
-# NGINX Ingress Controller via Helm
-resource "helm_release" "nginx_ingress" {
-  name             = "ingress-nginx"
-  repository       = "https://kubernetes.github.io/ingress-nginx"
-  chart            = "ingress-nginx"
-  namespace        = "ingress-nginx"
-  create_namespace = true
-  version          = "4.10.0"
-
-  set {
-    name  = "controller.service.type"
-    value = "LoadBalancer"
-  }
-
-  set {
-    name  = "controller.service.loadBalancerIP"
-    value = local.nginx_internal_ip
-  }
-
-  set {
-    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-internal"
-    value = "true"
-  }
-
-  set {
-    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-internal-subnet"
-    value = local.aks_subnet_name
-  }
-
-  set {
-    name  = "controller.replicaCount"
-    value = "3"
-  }
-
-  set {
-    name  = "controller.nodeSelector.kubernetes\\.io/os"
-    value = "linux"
-  }
-
-  # Enable health check endpoint
-  set {
-    name  = "controller.healthStatus"
-    value = "true"
-  }
-
-  set {
-    name  = "controller.healthStatusURI"
-    value = "/healthz"
-  }
-
-  # Configure resource limits
-  set {
-    name  = "controller.resources.limits.cpu"
-    value = "500m"
-  }
-
-  set {
-    name  = "controller.resources.limits.memory"
-    value = "512Mi"
-  }
-
-  set {
-    name  = "controller.resources.requests.cpu"
-    value = "100m"
-  }
-
-  set {
-    name  = "controller.resources.requests.memory"
-    value = "128Mi"
-  }
-
-  # Configure metrics
-  set {
-    name  = "controller.metrics.enabled"
-    value = "true"
-  }
-
-  set {
-    name  = "controller.metrics.serviceMonitor.enabled"
-    value = "true"
-  }
-
-  # Configure admission webhook
-  set {
-    name  = "controller.admissionWebhooks.enabled"
-    value = "true"
-  }
-
-  # Configure default backend
-  set {
-    name  = "defaultBackend.enabled"
-    value = "true"
-  }
-
-  # Configure pod disruption budget
-  set {
-    name  = "controller.podDisruptionBudget.enabled"
-    value = "true"
-  }
-
-  set {
-    name  = "controller.podDisruptionBudget.minAvailable"
-    value = "1"
-  }
-
-  # Implicit dependency through cluster connection in providers.tf
-}
-
-# Sample application to test the ingress
-resource "kubernetes_deployment" "sample_app" {
-  metadata {
-    name      = "sample-app"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
-    labels = {
-      app = "sample-app"
-    }
-  }
-
-  spec {
-    replicas = 2
-
-    selector {
-      match_labels = {
-        app = "sample-app"
-      }
-    }
-
-    template {
-      metadata {
-        labels = {
-          app                           = "sample-app"
-          "azure.workload.identity/use" = "true"
-        }
-      }
-
-      spec {
-        service_account_name = kubernetes_service_account.workload_identity.metadata[0].name
-
-        container {
-          name  = "app"
-          image = "nginx:1.21"
-
-          port {
-            container_port = 80
-          }
-
-          volume_mount {
-            name       = "secrets-store"
-            mount_path = "/mnt/secrets-store"
-            read_only  = true
-          }
-
-          env {
-            name  = "AZURE_CLIENT_ID"
-            value = azurerm_user_assigned_identity.workload_identity.client_id
-          }
-
-          env {
-            name  = "AZURE_TENANT_ID"
-            value = data.azurerm_client_config.current.tenant_id
-          }
-
-          resources {
-            limits = {
-              cpu    = "100m"
-              memory = "128Mi"
-            }
-            requests = {
-              cpu    = "50m"
-              memory = "64Mi"
-            }
-          }
-
-          liveness_probe {
-            http_get {
-              path = "/"
-              port = 80
-            }
-            initial_delay_seconds = 30
-            period_seconds        = 10
-          }
-
-          readiness_probe {
-            http_get {
-              path = "/"
-              port = 80
-            }
-            initial_delay_seconds = 5
-            period_seconds        = 5
-          }
-        }
-
-        volume {
-          name = "secrets-store"
-
-          csi {
-            driver    = "secrets-store.csi.k8s.io"
-            read_only = true
-
-            volume_attributes = {
-              secretProviderClass = "azure-keyvault-secrets"
-            }
-          }
-        }
-      }
-    }
-  }
-
-  # Implicit dependencies through namespace, service account, and helm release references
-}
-
-# Service for sample application
-resource "kubernetes_service" "sample_app" {
-  metadata {
-    name      = "sample-app-service"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
-  }
-
-  spec {
-    selector = {
-      app = "sample-app"
-    }
-
-    port {
-      port        = 80
-      target_port = 80
-    }
-
-    type = "ClusterIP"
-  }
-
-  # Implicit dependency through deployment selector reference
-}
-
-# Ingress for sample application
-resource "kubernetes_ingress_v1" "sample_app" {
-  metadata {
-    name      = "sample-app-ingress"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
-
-    annotations = {
-      "kubernetes.io/ingress.class"                = "nginx"
-      "nginx.ingress.kubernetes.io/rewrite-target" = "/"
-      "nginx.ingress.kubernetes.io/ssl-redirect"   = "true"
-    }
-  }
-
-  spec {
-    rule {
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-
-          backend {
-            service {
-              name = kubernetes_service.sample_app.metadata[0].name
-              port {
-                number = 80
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  # Implicit dependency through service reference
-}
+# Kubernetes resources removed - deploy manually after infrastructure
+# Use the following commands after infrastructure deployment:
+# 1. helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+# 2. helm install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
+# 3. Deploy sample applications and configure ingress resources

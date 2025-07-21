@@ -42,7 +42,6 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   default_node_pool {
     name           = "default"
-    node_count     = var.node_count
     vm_size        = var.node_vm_size
     vnet_subnet_id = azurerm_subnet.aks.id
     zones          = ["1"]
@@ -56,8 +55,8 @@ resource "azurerm_kubernetes_cluster" "main" {
     os_disk_type    = "Managed"
     os_sku          = "Ubuntu"
 
-    # Enable host encryption
-    host_encryption_enabled = true
+    # Host encryption disabled (subscription doesn't support it)
+    host_encryption_enabled = false
 
     # Enable node public IP
     node_public_ip_enabled = false
@@ -71,6 +70,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     network_plugin      = "azure"
     network_plugin_mode = "overlay"
     network_policy      = "cilium"
+    network_data_plane  = "cilium"
     pod_cidr            = var.pod_cidr
     service_cidr        = var.service_cidr
     dns_service_ip      = var.dns_service_ip
@@ -198,93 +198,11 @@ resource "azurerm_federated_identity_credential" "csi_driver" {
   subject             = "system:serviceaccount:kube-system:secrets-store-csi-driver"
 }
 
-# Kubernetes Resources
-# Create namespace for application
-resource "kubernetes_namespace" "app_namespace" {
-  metadata {
-    name = var.app_namespace
-  }
-
-  # Implicit dependency through app_namespace variable reference
-}
-
-# Service Account with workload identity annotations
-resource "kubernetes_service_account" "workload_identity" {
-  metadata {
-    name      = var.app_service_account
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
-
-    annotations = {
-      "azure.workload.identity/client-id" = azurerm_user_assigned_identity.workload_identity.client_id
-      "azure.workload.identity/tenant-id" = data.azurerm_client_config.current.tenant_id
-    }
-
-    labels = {
-      "azure.workload.identity/use" = "true"
-    }
-  }
-
-  # Implicit dependencies through namespace and identity references
-}
-
-# SecretProviderClass for Key Vault integration
-# Note: This will be applied after the cluster is created using null_resource
-resource "null_resource" "secret_provider_class" {
-  triggers = {
-    cluster_id               = azurerm_kubernetes_cluster.main.id
-    workload_identity        = azurerm_user_assigned_identity.workload_identity.client_id
-    key_vault_name           = azurerm_key_vault.main.name
-    namespace                = kubernetes_namespace.app_namespace.metadata[0].name
-    key_vault_access         = azurerm_role_assignment.workload_identity_key_vault.id
-    database_secret          = azurerm_key_vault_secret.database_connection.id
-    storage_secret           = azurerm_key_vault_secret.storage_connection.id
-    private_endpoint_ready   = azurerm_private_endpoint.key_vault.id
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      # Wait for cluster to be ready
-      az aks get-credentials --resource-group ${azurerm_resource_group.main.name} --name ${azurerm_kubernetes_cluster.main.name} --overwrite-existing --admin
-      
-      # Create SecretProviderClass
-      cat <<EOF | kubectl apply -f -
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata:
-  name: azure-keyvault-secrets
-  namespace: ${var.app_namespace}
-spec:
-  provider: azure
-  parameters:
-    usePodIdentity: "false"
-    useVMManagedIdentity: "false"
-    userAssignedIdentityID: ${azurerm_user_assigned_identity.workload_identity.client_id}
-    keyvaultName: ${azurerm_key_vault.main.name}
-    tenantId: ${data.azurerm_client_config.current.tenant_id}
-    objects: |
-      array:
-        - |
-          objectName: database-connection-string
-          objectType: secret
-          objectVersion: ""
-        - |
-          objectName: storage-account-key
-          objectType: secret
-          objectVersion: ""
-  secretObjects:
-  - secretName: app-secrets
-    type: Opaque
-    data:
-    - objectName: database-connection-string
-      key: connectionString
-    - objectName: storage-account-key
-      key: storageKey
-EOF
-    EOT
-  }
-
-  # Implicit dependencies through triggers that reference all required resources
-}
+# Kubernetes Resources removed - deploy manually after infrastructure is ready
+# Use the following commands after deployment:
+# 1. az aks get-credentials --resource-group rg-prod-aks101-eus2-001 --name aks-prod-aks101-eus2-001 --admin
+# 2. kubectl create namespace aks-app
+# 3. Create workload identity service account and SecretProviderClass manually
 
 # Sample secrets in Key Vault
 resource "azurerm_key_vault_secret" "database_connection" {

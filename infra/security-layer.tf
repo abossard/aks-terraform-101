@@ -71,8 +71,8 @@ resource "azurerm_key_vault" "main" {
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
-  # Disable public network access
-  public_network_access_enabled = false
+  # Enable public network access for initial deployment
+  public_network_access_enabled = true
 
   # Enable RBAC for access control
   enable_rbac_authorization = true
@@ -85,10 +85,17 @@ resource "azurerm_key_vault" "main" {
 
   network_acls {
     bypass         = "AzureServices"
-    default_action = "Deny"
+    default_action = "Allow"  # Temporarily allow for initial deployment
   }
 
   tags = local.common_tags
+}
+
+# Grant current user Key Vault Administrator role for initial setup
+resource "azurerm_role_assignment" "current_user_key_vault_admin" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Administrator"
+  principal_id         = data.azurerm_client_config.current.object_id
 }
 
 # Private Endpoint for Key Vault
@@ -398,7 +405,6 @@ resource "azurerm_firewall" "main" {
   sku_name            = "AZFW_VNet"
   sku_tier            = "Standard"
   firewall_policy_id  = azurerm_firewall_policy.main.id
-  dns_proxy_enabled   = true
 
   ip_configuration {
     name                 = "configuration"

@@ -14,7 +14,7 @@ service_cidr      = "172.16.0.0/16"
 dns_service_ip    = "172.16.0.10"
 
 # AKS Configuration
-kubernetes_version = "1.28.5"
+kubernetes_version = "1.31.9"
 node_count        = 3
 min_node_count    = 1
 max_node_count    = 10

@@ -16,7 +16,12 @@
       "Bash(az account:*)",
       "Bash(az ad signed-in-user show:*)",
       "Bash(az network private-endpoint list:*)",
-      "Bash(az network private-endpoint delete:*)"
+      "Bash(az network private-endpoint delete:*)",
+      "Bash(az network application-gateway show:*)",
+      "Bash(az aks get-versions:*)",
+      "Bash(az network application-gateway delete:*)",
+      "Bash(az aks get-credentials:*)",
+      "Bash(az login:*)"
     ],
     "deny": []
   }

@@ -212,15 +212,15 @@ output "kube_config_raw" {
   sensitive   = true
 }
 
-# Application Namespace
+# Application Configuration (static values since K8s resources removed)
 output "app_namespace" {
   description = "Kubernetes namespace for the application"
-  value       = kubernetes_namespace.app_namespace.metadata[0].name
+  value       = var.app_namespace
 }
 
 output "app_service_account" {
   description = "Kubernetes service account for the application"
-  value       = kubernetes_service_account.workload_identity.metadata[0].name
+  value       = var.app_service_account
 }
 
 # Useful URLs and Endpoints

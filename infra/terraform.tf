@@ -7,14 +7,7 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.30"
-    }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.15"
-    }
+# Kubernetes and Helm providers removed
     random = {
       source  = "hashicorp/random"
       version = "~> 3.6"
@@ -47,23 +40,7 @@ provider "azurerm" {
   }
 }
 
-# Configure Kubernetes Provider with conditional configuration
-provider "kubernetes" {
-  host                   = try(azurerm_kubernetes_cluster.main.kube_config[0].host, null)
-  client_certificate     = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_certificate), null)
-  client_key             = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_key), null)
-  cluster_ca_certificate = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate), null)
-}
-
-# Configure Helm Provider with conditional configuration
-provider "helm" {
-  kubernetes {
-    host                   = try(azurerm_kubernetes_cluster.main.kube_config[0].host, null)
-    client_certificate     = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_certificate), null)
-    client_key             = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].client_key), null)
-    cluster_ca_certificate = try(base64decode(azurerm_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate), null)
-  }
-}
+# Kubernetes and Helm providers removed - deploy K8s resources manually after infrastructure
 
 # Data sources
 data "azurerm_client_config" "current" {}

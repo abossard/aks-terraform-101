@@ -32,15 +32,12 @@ resource "pkcs12_from_pem" "app_gateway" {
   password        = var.ssl_cert_password != "" ? var.ssl_cert_password : "demo123!"
 }
 
-# Store certificate in Key Vault
-resource "azurerm_key_vault_certificate" "app_gateway" {
+# Store certificate in Key Vault as a secret (workaround for PKCS#12 format issue)
+resource "azurerm_key_vault_secret" "ssl_certificate" {
   name         = "ssl-certificate"
+  value        = base64encode(pkcs12_from_pem.app_gateway.result)
   key_vault_id = azurerm_key_vault.main.id
-
-  certificate {
-    contents = base64encode(pkcs12_from_pem.app_gateway.result)
-    password = var.ssl_cert_password != "" ? var.ssl_cert_password : "demo123!"
-  }
+  content_type = "application/x-pkcs12"
 
   # Need explicit dependency since Key Vault is private and needs endpoint ready  
   depends_on = [azurerm_private_endpoint.key_vault]
