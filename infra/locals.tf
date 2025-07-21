@@ -33,13 +33,13 @@ locals {
   firewall_route_table_name = "rt-fw-${var.environment}-${var.location_code}-001"
 
   # Storage (no hyphens, lowercase, alphanumeric only)
-  storage_name = "st${var.environment}${var.project}${var.location_code}${random_string.suffix.result}"
+  storage_name = "st${var.environment}${var.project}${var.location_code}${random_string.unique_suffix.result}"
 
   # Key Vault (15-24 characters)
-  key_vault_name = "kv-${var.environment}-${var.project}-${var.location_code}-${random_string.suffix.result}"
+  key_vault_name = "kv-${var.environment}-${var.project}-${var.location_code}-${random_string.unique_suffix.result}"
 
   # SQL Server
-  sql_server_name   = "sql-main-${var.environment}-${var.location_code}-${random_string.suffix.result}"
+  sql_server_name   = "sql-main-${var.environment}-${var.location_code}-${random_string.unique_suffix.result}"
   sql_database_name = "sqldb-app-${var.environment}-${var.location_code}"
 
   # Private Endpoints
@@ -51,7 +51,7 @@ locals {
   workload_identity_name = "id-workload-${var.environment}-${var.location_code}-001"
 
   # Container Registry (if enabled)
-  acr_name = "acr${var.environment}${var.project}${var.location_code}${random_string.suffix.result}"
+  acr_name = "acr${var.environment}${var.project}${var.location_code}${random_string.unique_suffix.result}"
 
   # Subnet calculations
   aks_subnet_cidr         = cidrsubnet(var.vnet_address_space, 8, 0) # 10.240.0.0/24
@@ -73,5 +73,26 @@ locals {
     Environment = var.environment
     Project     = var.project
     Location    = var.location
+    DeployedBy  = coalesce(
+      var.security_email,
+      "terraform-deployment"
+    )
+    DeployedAt  = formatdate("YYYY-MM-DD'T'hh:mm:ssZ", timestamp())
   })
+
+  # Auto-detected user information with fallbacks
+  detected_user_email = coalesce(
+    var.security_email,
+    "admin@example.com"  # Default fallback if not provided
+  )
+  
+  detected_sql_admin_login = coalesce(
+    var.sql_azuread_admin_login,
+    local.detected_user_email
+  )
+  
+  detected_sql_admin_object_id = coalesce(
+    var.sql_azuread_admin_object_id,
+    data.azurerm_client_config.current.object_id
+  )
 }

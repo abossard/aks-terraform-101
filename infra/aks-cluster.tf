@@ -204,7 +204,7 @@ resource "azurerm_federated_identity_credential" "csi_driver" {
 # 2. kubectl create namespace aks-app
 # 3. Create workload identity service account and SecretProviderClass manually
 
-# Sample secrets in Key Vault
+# Sample secrets in Key Vault with auto-generated connection string
 resource "azurerm_key_vault_secret" "database_connection" {
   name         = "database-connection-string"
   value        = "Server=${azurerm_mssql_server.main.fully_qualified_domain_name};Database=${azurerm_mssql_database.main.name};Authentication=Active Directory Managed Identity;User Id=${azurerm_user_assigned_identity.workload_identity.client_id};"

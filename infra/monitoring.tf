@@ -192,7 +192,7 @@ resource "azurerm_monitor_action_group" "main" {
 
   email_receiver {
     name          = "security-team"
-    email_address = var.security_email
+    email_address = local.detected_user_email
   }
 
   tags = local.common_tags

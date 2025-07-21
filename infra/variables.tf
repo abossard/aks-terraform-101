@@ -91,7 +91,7 @@ variable "node_vm_size" {
   default     = "Standard_D4s_v3"
 }
 
-# Security Configuration
+# Security Configuration (Auto-detected or defaulted)
 variable "sql_admin_username" {
   description = "SQL Server administrator username"
   type        = string
@@ -99,30 +99,36 @@ variable "sql_admin_username" {
   sensitive   = true
 }
 
-variable "sql_admin_password" {
-  description = "SQL Server administrator password"
+# SQL password is now auto-generated - no variable needed
+
+variable "sql_azuread_admin_login" {
+  description = "Azure AD admin login for SQL Server (auto-detected from current user if not provided)"
   type        = string
-  sensitive   = true
+  default     = ""
   validation {
-    condition     = length(var.sql_admin_password) >= 12
-    error_message = "SQL admin password must be at least 12 characters long."
+    condition = var.sql_azuread_admin_login == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.sql_azuread_admin_login))
+    error_message = "SQL Azure AD admin login must be empty (auto-detect) or a valid email address."
   }
 }
 
-variable "sql_azuread_admin_login" {
-  description = "Azure AD admin login for SQL Server"
-  type        = string
-  default     = "sql-admins"
-}
-
 variable "sql_azuread_admin_object_id" {
-  description = "Azure AD admin object ID for SQL Server"
+  description = "Azure AD admin object ID for SQL Server (auto-detected from current user if not provided)"
   type        = string
+  default     = ""
+  validation {
+    condition = var.sql_azuread_admin_object_id == "" || can(regex("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", var.sql_azuread_admin_object_id))
+    error_message = "SQL Azure AD admin object ID must be empty (auto-detect) or a valid UUID format."
+  }
 }
 
 variable "security_email" {
-  description = "Email address for security notifications"
+  description = "Email address for security notifications (auto-detected from current user if not provided)"
   type        = string
+  default     = ""
+  validation {
+    condition = var.security_email == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.security_email))
+    error_message = "Security email must be empty (auto-detect) or a valid email address."
+  }
 }
 
 # Application Configuration
@@ -138,13 +144,8 @@ variable "app_service_account" {
   default     = "workload-identity-sa"
 }
 
-# SSL Configuration
-variable "ssl_cert_password" {
-  description = "Password for SSL certificate"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
+# SSL Configuration (Auto-generated)
+# SSL certificate password is now auto-generated - no variable needed
 
 # Feature Flags
 variable "enable_container_registry" {

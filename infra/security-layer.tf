@@ -211,15 +211,15 @@ resource "azurerm_mssql_server" "main" {
   location                     = azurerm_resource_group.main.location
   version                      = "12.0"
   administrator_login          = var.sql_admin_username
-  administrator_login_password = var.sql_admin_password
+  administrator_login_password = random_password.sql_admin_password.result
 
   # Disable public network access
   public_network_access_enabled = false
 
-  # Azure AD authentication
+  # Azure AD authentication with auto-detected admin
   azuread_administrator {
-    login_username = var.sql_azuread_admin_login
-    object_id      = var.sql_azuread_admin_object_id
+    login_username = local.detected_sql_admin_login
+    object_id      = local.detected_sql_admin_object_id
   }
 
   identity {
@@ -238,10 +238,10 @@ resource "azurerm_mssql_database" "main" {
   sku_name       = "S1"
   zone_redundant = false
 
-  # Threat detection
+  # Threat detection with auto-detected email
   threat_detection_policy {
     state           = "Enabled"
-    email_addresses = [var.security_email]
+    email_addresses = [local.detected_user_email]
   }
 
   tags = local.common_tags

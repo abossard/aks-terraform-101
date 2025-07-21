@@ -150,11 +150,11 @@ resource "azurerm_application_gateway" "main" {
     ssl_certificate_name           = "app-gateway-ssl-cert"
   }
 
-  # SSL Certificate from PKCS#12 data (demo setup)
+  # SSL Certificate from PKCS#12 data using auto-generated password
   ssl_certificate {
     name     = "app-gateway-ssl-cert"
     data     = pkcs12_from_pem.app_gateway.result
-    password = var.ssl_cert_password != "" ? var.ssl_cert_password : "demo123!"
+    password = random_password.ssl_cert_password.result
   }
 
   # Redirect HTTP to HTTPS

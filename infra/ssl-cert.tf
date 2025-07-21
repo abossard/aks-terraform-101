@@ -25,11 +25,11 @@ resource "tls_self_signed_cert" "app_gateway" {
   ]
 }
 
-# Create PFX certificate for Application Gateway
+# Create PFX certificate for Application Gateway using auto-generated password
 resource "pkcs12_from_pem" "app_gateway" {
   cert_pem        = tls_self_signed_cert.app_gateway.cert_pem
   private_key_pem = tls_private_key.app_gateway.private_key_pem
-  password        = var.ssl_cert_password != "" ? var.ssl_cert_password : "demo123!"
+  password        = random_password.ssl_cert_password.result
 }
 
 # Store certificate in Key Vault as a secret (workaround for PKCS#12 format issue)

@@ -1,13 +1,7 @@
 # Base Infrastructure Layer
 # Resource Group, VNet, Subnets, NSGs
 
-# Random suffix for uniqueness
-resource "random_string" "suffix" {
-  length  = 3
-  special = false
-  upper   = false
-  numeric = true
-}
+# Random suffix for uniqueness is now in secrets.tf
 
 # Resource Group
 resource "azurerm_resource_group" "main" {
