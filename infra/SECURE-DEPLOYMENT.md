@@ -68,6 +68,11 @@ terraform version
 - **SQL AD Admin**: Current Azure user's email  
 - **SQL AD Object ID**: Current Azure user's object ID
 
+### SQL Database Identities
+- **Current User**: Auto-configured as SQL Server administrator
+- **Application Identity**: Managed identity for application database access
+- **Workload Identity**: Federated credential for Kubernetes integration
+
 ### Secure Storage
 All generated passwords are automatically stored in:
 - Azure Key Vault secrets
@@ -92,14 +97,17 @@ All generated passwords are automatically stored in:
 ## 📁 Modified Files
 
 1. **`secrets.tf`** - New file with auto-generation logic
-2. **`variables.tf`** - Removed sensitive variables, added auto-detection
-3. **`terraform.tfvars`** - Removed all sensitive values
-4. **`locals.tf`** - Added auto-detection logic
-5. **`security-layer.tf`** - Uses generated passwords
-6. **`ssl-cert.tf`** - Uses generated SSL password
-7. **`ingress-layer.tf`** - Uses generated SSL password
-8. **`monitoring.tf`** - Uses auto-detected email
-9. **`base-infrastructure.tf`** - Uses new unique suffix
+2. **`sql-identities.tf`** - New file with SQL Azure AD identity management
+3. **`variables.tf`** - Removed sensitive variables, added auto-detection
+4. **`terraform.tfvars`** - Removed all sensitive values
+5. **`terraform.tf`** - Added sqlsso provider for SQL identity management
+6. **`locals.tf`** - Added auto-detection logic
+7. **`security-layer.tf`** - Uses generated passwords
+8. **`ssl-cert.tf`** - Uses generated SSL password
+9. **`ingress-layer.tf`** - Uses generated SSL password
+10. **`monitoring.tf`** - Uses auto-detected email
+11. **`base-infrastructure.tf`** - Uses new unique suffix
+12. **`outputs.tf`** - Added SQL identity outputs
 
 ## 🎯 Benefits
 

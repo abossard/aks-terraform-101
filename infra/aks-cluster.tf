@@ -209,16 +209,10 @@ resource "azurerm_key_vault_secret" "database_connection" {
   name         = "database-connection-string"
   value        = "Server=${azurerm_mssql_server.main.fully_qualified_domain_name};Database=${azurerm_mssql_database.main.name};Authentication=Active Directory Managed Identity;User Id=${azurerm_user_assigned_identity.workload_identity.client_id};"
   key_vault_id = azurerm_key_vault.main.id
-  
-  # Need explicit dependency since Key Vault is private and needs endpoint ready
-  depends_on = [azurerm_private_endpoint.key_vault]
 }
 
 resource "azurerm_key_vault_secret" "storage_connection" {
   name         = "storage-account-key"
   value        = azurerm_storage_account.main.primary_access_key
   key_vault_id = azurerm_key_vault.main.id
-  
-  # Need explicit dependency since Key Vault is private and needs endpoint ready
-  depends_on = [azurerm_private_endpoint.key_vault]
 }

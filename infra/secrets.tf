@@ -49,11 +49,6 @@ resource "azurerm_key_vault_secret" "sql_admin_password" {
   value        = random_password.sql_admin_password.result
   key_vault_id = azurerm_key_vault.main.id
   content_type = "text/plain"
-
-  depends_on = [
-    azurerm_private_endpoint.key_vault,
-    azurerm_role_assignment.current_user_key_vault_admin
-  ]
 }
 
 resource "azurerm_key_vault_secret" "ssl_cert_password" {
@@ -61,11 +56,6 @@ resource "azurerm_key_vault_secret" "ssl_cert_password" {
   value        = random_password.ssl_cert_password.result
   key_vault_id = azurerm_key_vault.main.id
   content_type = "text/plain"
-
-  depends_on = [
-    azurerm_private_endpoint.key_vault,
-    azurerm_role_assignment.current_user_key_vault_admin
-  ]
 }
 
 # Output the generated values (marked as sensitive)

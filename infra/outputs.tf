@@ -79,6 +79,22 @@ output "workload_identity_name" {
   value       = azurerm_user_assigned_identity.workload_identity.name
 }
 
+# SQL Application Identity
+output "sql_app_identity_client_id" {
+  description = "Client ID of the SQL application identity"
+  value       = azurerm_user_assigned_identity.sql_app_identity.client_id
+}
+
+output "sql_app_identity_principal_id" {
+  description = "Principal ID of the SQL application identity"
+  value       = azurerm_user_assigned_identity.sql_app_identity.principal_id
+}
+
+output "sql_app_identity_name" {
+  description = "Name of the SQL application identity"
+  value       = azurerm_user_assigned_identity.sql_app_identity.name
+}
+
 # Application Gateway
 output "application_gateway_name" {
   description = "Name of the Application Gateway"
@@ -260,17 +276,19 @@ output "private_dns_zones" {
 output "deployment_summary" {
   description = "Summary of deployed resources"
   value = {
-    resource_group      = azurerm_resource_group.main.name
-    aks_cluster         = azurerm_kubernetes_cluster.main.name
-    application_gateway = azurerm_application_gateway.main.name
-    azure_firewall      = azurerm_firewall.main.name
-    key_vault           = azurerm_key_vault.main.name
-    storage_account     = azurerm_storage_account.main.name
-    sql_server          = azurerm_mssql_server.main.name
-    log_analytics       = azurerm_log_analytics_workspace.main.name
-    app_insights        = azurerm_application_insights.main.name
-    workload_identity   = azurerm_user_assigned_identity.workload_identity.name
-    nginx_internal_ip   = local.nginx_internal_ip
-    public_ip           = azurerm_public_ip.app_gateway.ip_address
+    resource_group         = azurerm_resource_group.main.name
+    aks_cluster           = azurerm_kubernetes_cluster.main.name
+    application_gateway   = azurerm_application_gateway.main.name
+    azure_firewall        = azurerm_firewall.main.name
+    key_vault             = azurerm_key_vault.main.name
+    storage_account       = azurerm_storage_account.main.name
+    sql_server            = azurerm_mssql_server.main.name
+    sql_database          = azurerm_mssql_database.main.name
+    log_analytics         = azurerm_log_analytics_workspace.main.name
+    app_insights          = azurerm_application_insights.main.name
+    workload_identity     = azurerm_user_assigned_identity.workload_identity.name
+    sql_app_identity      = azurerm_user_assigned_identity.sql_app_identity.name
+    nginx_internal_ip     = local.nginx_internal_ip
+    public_ip             = azurerm_public_ip.app_gateway.ip_address
   }
 }

@@ -38,7 +38,4 @@ resource "azurerm_key_vault_secret" "ssl_certificate" {
   value        = base64encode(pkcs12_from_pem.app_gateway.result)
   key_vault_id = azurerm_key_vault.main.id
   content_type = "application/x-pkcs12"
-
-  # Need explicit dependency since Key Vault is private and needs endpoint ready  
-  depends_on = [azurerm_private_endpoint.key_vault]
 }

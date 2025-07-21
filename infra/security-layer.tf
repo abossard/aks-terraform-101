@@ -118,8 +118,6 @@ resource "azurerm_private_endpoint" "key_vault" {
   }
 
   tags = local.common_tags
-
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.key_vault]
 }
 
 # Storage Account
@@ -176,8 +174,6 @@ resource "azurerm_private_endpoint" "storage_blob" {
   }
 
   tags = local.common_tags
-
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.storage_blob]
 }
 
 # Private Endpoint for Storage Account - File
@@ -200,8 +196,6 @@ resource "azurerm_private_endpoint" "storage_file" {
   }
 
   tags = local.common_tags
-
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.storage_file]
 }
 
 # SQL Server
@@ -267,8 +261,6 @@ resource "azurerm_private_endpoint" "sql_server" {
   }
 
   tags = local.common_tags
-
-  depends_on = [azurerm_private_dns_zone_virtual_network_link.sql_database]
 }
 
 # Azure Firewall Public IP

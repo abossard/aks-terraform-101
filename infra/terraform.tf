@@ -7,7 +7,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
-# Kubernetes and Helm providers removed
     random = {
       source  = "hashicorp/random"
       version = "~> 3.6"
@@ -23,6 +22,10 @@ terraform {
     null = {
       source  = "hashicorp/null"
       version = "~> 3.2"
+    }
+    sqlsso = {
+      source  = "jason-johnson/sqlsso"
+      version = "1.4.0"
     }
   }
 }
