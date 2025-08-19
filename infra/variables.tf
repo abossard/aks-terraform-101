@@ -110,7 +110,7 @@ variable "sql_azuread_admin_login" {
   type        = string
   default     = ""
   validation {
-    condition = var.sql_azuread_admin_login == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.sql_azuread_admin_login))
+    condition     = var.sql_azuread_admin_login == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.sql_azuread_admin_login))
     error_message = "SQL Azure AD admin login must be empty (auto-detect) or a valid email address."
   }
 }
@@ -120,7 +120,7 @@ variable "sql_azuread_admin_object_id" {
   type        = string
   default     = ""
   validation {
-    condition = var.sql_azuread_admin_object_id == "" || can(regex("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", var.sql_azuread_admin_object_id))
+    condition     = var.sql_azuread_admin_object_id == "" || can(regex("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", var.sql_azuread_admin_object_id))
     error_message = "SQL Azure AD admin object ID must be empty (auto-detect) or a valid UUID format."
   }
 }
@@ -130,7 +130,7 @@ variable "security_email" {
   type        = string
   default     = ""
   validation {
-    condition = var.security_email == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.security_email))
+    condition     = var.security_email == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.security_email))
     error_message = "Security email must be empty (auto-detect) or a valid email address."
   }
 }

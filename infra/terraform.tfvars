@@ -4,15 +4,15 @@
 
 # Core Configuration
 environment   = "prod"
-project      = "aks101"
-location     = "East US 2"
+project       = "aks101"
+location      = "East US 2"
 location_code = "eus2"
 
 # Network Configuration
 vnet_address_space = "10.240.0.0/16"
-pod_cidr          = "192.168.0.0/16"
-service_cidr      = "172.16.0.0/16"
-dns_service_ip    = "172.16.0.10"
+pod_cidr           = "192.168.0.0/16"
+service_cidr       = "172.16.0.0/16"
+dns_service_ip     = "172.16.0.10"
 
 # AKS Configuration
 kubernetes_version = "1.31.9"
@@ -27,7 +27,7 @@ sql_admin_username = "sqladmin"
 # security_email is auto-detected from current user
 
 # Application Configuration
-app_namespace        = "aks-app"
+app_namespace       = "aks-app"
 app_service_account = "workload-identity-sa"
 
 # SSL Configuration (Auto-generated)

@@ -38,7 +38,7 @@ terraform {
 provider "azurerm" {
   # Use Entra ID authentication for storage accounts instead of account keys
   storage_use_azuread = true
-  
+
   features {
     key_vault {
       purge_soft_delete_on_destroy    = true

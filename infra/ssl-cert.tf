@@ -10,13 +10,13 @@ resource "tls_self_signed_cert" "wildcard" {
   private_key_pem = tls_private_key.app_gateway.private_key_pem
 
   subject {
-    common_name  = "*.yourdomain.com"  # Wildcard certificate
+    common_name  = "*.yourdomain.com" # Wildcard certificate
     organization = "AKS Demo"
   }
 
   validity_period_hours = 8760
-  allowed_uses         = ["key_encipherment", "digital_signature", "server_auth"]
-  
+  allowed_uses          = ["key_encipherment", "digital_signature", "server_auth"]
+
   # Subject Alternative Names for multiple domains
   dns_names = [
     "*.yourdomain.com",

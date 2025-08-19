@@ -37,8 +37,8 @@ resource "azurerm_application_gateway" "main" {
   firewall_policy_id = azurerm_web_application_firewall_policy.main.id
 
   sku {
-    name     = "WAF_v2"
-    tier     = "WAF_v2"
+    name = "WAF_v2"
+    tier = "WAF_v2"
   }
 
   # WAF configuration removed - using WAF policy instead
@@ -175,7 +175,7 @@ resource "azurerm_application_gateway" "main" {
   redirect_configuration {
     name                 = "http-to-https-redirect"
     redirect_type        = "Permanent"
-    target_listener_name = "public-app-listener"  # Default to public app
+    target_listener_name = "public-app-listener" # Default to public app
     include_path         = true
     include_query_string = true
   }

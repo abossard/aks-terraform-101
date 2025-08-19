@@ -4,7 +4,7 @@
 # Private DNS Zones
 resource "azurerm_private_dns_zone" "main" {
   for_each = local.private_dns_zones
-  
+
   name                = each.value
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.common_tags
@@ -13,7 +13,7 @@ resource "azurerm_private_dns_zone" "main" {
 # VNet Links for DNS Zones
 resource "azurerm_private_dns_zone_virtual_network_link" "main" {
   for_each = local.private_dns_zones
-  
+
   name                  = "${each.key}-dns-link"
   resource_group_name   = azurerm_resource_group.main.name
   private_dns_zone_name = azurerm_private_dns_zone.main[each.key].name
@@ -44,8 +44,8 @@ resource "azurerm_key_vault" "main" {
 
   network_acls {
     bypass         = "AzureServices"
-  default_action = "Allow"  # Allow all for initial deployment
-  ip_rules       = [chomp(data.http.myip.response_body)]  # Current public IP
+    default_action = "Allow"                               # Allow all for initial deployment
+    ip_rules       = [chomp(data.http.myip.response_body)] # Current public IP
   }
 
   tags = local.common_tags
@@ -117,7 +117,7 @@ resource "azurerm_storage_account" "main" {
 # Private Endpoints for Storage Account
 resource "azurerm_private_endpoint" "storage" {
   for_each = local.storage_endpoints
-  
+
   name                = "${local.storage_pe_name}-${each.key}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
@@ -296,9 +296,9 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
     action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
 
     rule {
-      name                  = "aks-tcp-ports"
-      protocols             = ["TCP"]
-      source_addresses      = [
+      name      = "aks-tcp-ports"
+      protocols = ["TCP"]
+      source_addresses = [
         var.clusters.public.subnet_cidr,
         var.clusters.backend.subnet_cidr,
       ]
@@ -307,9 +307,9 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
     }
 
     rule {
-      name                  = "aks-udp-ports"
-      protocols             = ["UDP"]
-      source_addresses      = [
+      name      = "aks-udp-ports"
+      protocols = ["UDP"]
+      source_addresses = [
         var.clusters.public.subnet_cidr,
         var.clusters.backend.subnet_cidr,
       ]
@@ -318,9 +318,9 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
     }
 
     rule {
-      name                  = "ntp-time-sync"
-      protocols             = ["UDP"]
-      source_addresses      = [
+      name      = "ntp-time-sync"
+      protocols = ["UDP"]
+      source_addresses = [
         var.clusters.public.subnet_cidr,
         var.clusters.backend.subnet_cidr,
       ]

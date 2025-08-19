@@ -40,9 +40,9 @@ output "aks_clusters" {
   description = "AKS cluster information"
   value = {
     for k, v in azurerm_kubernetes_cluster.main : k => {
-      name = v.name
-      id   = v.id
-      fqdn = v.fqdn
+      name              = v.name
+      id                = v.id
+      fqdn              = v.fqdn
       nginx_internal_ip = local.cluster_configs[k].nginx_internal_ip
     }
   }
@@ -233,20 +233,20 @@ output "nginx_ingress_config" {
     for k, v in local.cluster_configs : k => {
       # Static IP for LoadBalancer service
       static_ip = v.nginx_internal_ip
-      
+
       # Subnet name for Azure Load Balancer
       subnet_name = v.subnet_name
-      
+
       # Required service annotations
       annotations = {
-        "service.beta.kubernetes.io/azure-load-balancer-internal" = "true"
-        "service.beta.kubernetes.io/azure-load-balancer-static-ip" = v.nginx_internal_ip
+        "service.beta.kubernetes.io/azure-load-balancer-internal"        = "true"
+        "service.beta.kubernetes.io/azure-load-balancer-static-ip"       = v.nginx_internal_ip
         "service.beta.kubernetes.io/azure-load-balancer-internal-subnet" = v.subnet_name
       }
-      
+
       # Cluster information
       cluster_name = v.aks_name
-      subnet_cidr = var.clusters[k].subnet_cidr
+      subnet_cidr  = var.clusters[k].subnet_cidr
     }
   }
 }
@@ -257,7 +257,7 @@ output "kube_config_raw" {
   value = {
     for k, v in azurerm_kubernetes_cluster.main : k => v.kube_config_raw
   }
-  sensitive   = true
+  sensitive = true
 }
 
 # Application Configuration (static values since K8s resources removed)
@@ -308,46 +308,46 @@ output "private_dns_zones" {
 output "deployment_summary" {
   description = "Summary of deployed resources"
   value = {
-    resource_group      = azurerm_resource_group.main.name
-    location           = azurerm_resource_group.main.location
-    
+    resource_group = azurerm_resource_group.main.name
+    location       = azurerm_resource_group.main.location
+
     # Dual AKS clusters
     clusters = {
       for k, v in azurerm_kubernetes_cluster.main : k => {
-        name      = v.name
-        vm_size   = var.clusters[k].vm_size
+        name    = v.name
+        vm_size = var.clusters[k].vm_size
         scaling = {
           autoscaling_enabled = true
           min_count           = var.clusters[k].min_count
           max_count           = var.clusters[k].max_count
         }
-        nginx_ip  = local.cluster_configs[k].nginx_internal_ip
+        nginx_ip = local.cluster_configs[k].nginx_internal_ip
       }
     }
-    
+
     # Infrastructure
     application_gateway = azurerm_application_gateway.main.name
-    azure_firewall     = azurerm_firewall.main.name
-    key_vault          = azurerm_key_vault.main.name
-    storage_account    = azurerm_storage_account.main.name
-    sql_server         = azurerm_mssql_server.main.name
-    sql_database       = azurerm_mssql_database.main.name
-    log_analytics      = azurerm_log_analytics_workspace.main.name
-    app_insights       = azurerm_application_insights.main.name
-    
+    azure_firewall      = azurerm_firewall.main.name
+    key_vault           = azurerm_key_vault.main.name
+    storage_account     = azurerm_storage_account.main.name
+    sql_server          = azurerm_mssql_server.main.name
+    sql_database        = azurerm_mssql_database.main.name
+    log_analytics       = azurerm_log_analytics_workspace.main.name
+    app_insights        = azurerm_application_insights.main.name
+
     # Access information
     public_ip = azurerm_public_ip.app_gateway.ip_address
     domains = {
       public_app  = "app.yourdomain.com"
       backend_api = "api.yourdomain.com (WAF restricted)"
     }
-    
+
     # Features enabled
     web_app_routing_enabled = true
-    prometheus_enabled     = true
-    waf_enabled           = true
-    firewall_mode         = var.firewall_enforcement_enabled ? "Enforcement" : "Audit"
-    
+    prometheus_enabled      = true
+    waf_enabled             = true
+    firewall_mode           = var.firewall_enforcement_enabled ? "Enforcement" : "Audit"
+
     deployment_time = timestamp()
   }
 }

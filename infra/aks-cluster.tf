@@ -4,7 +4,7 @@
 # User-Assigned Managed Identity for Workloads
 resource "azurerm_user_assigned_identity" "workload_identity" {
   for_each = var.clusters
-  
+
   name                = local.cluster_configs[each.key].workload_identity_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
@@ -33,7 +33,7 @@ resource "azurerm_container_registry" "main" {
 # AKS Clusters
 resource "azurerm_kubernetes_cluster" "main" {
   for_each = var.clusters
-  
+
   name                = local.cluster_configs[each.key].aks_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
@@ -43,13 +43,13 @@ resource "azurerm_kubernetes_cluster" "main" {
   # Enable OIDC Issuer and Workload Identity (required for workload identity)
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
-  local_account_disabled = true
+  local_account_disabled    = true
 
   default_node_pool {
     name           = "default"
     vm_size        = each.value.vm_size
     vnet_subnet_id = azurerm_subnet.clusters[each.key].id
-    zones          = ["1"]  # Single zone for cost savings
+    zones          = ["1"] # Single zone for cost savings
 
     auto_scaling_enabled = true
     min_count            = each.value.min_count
@@ -59,7 +59,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     os_disk_type    = "Managed" # Changed from Ephemeral - doesn't fit in Standard_D2s_v3
     os_disk_size_gb = 30        # Smaller managed disk for cost savings
     os_sku          = "AzureLinux"
-    max_pods        = 30        # Reduced from default 110
+    max_pods        = 30 # Reduced from default 110
 
     # Host encryption disabled (subscription doesn't support it)
     host_encryption_enabled = false
@@ -68,7 +68,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     node_public_ip_enabled = false
 
     upgrade_settings {
-      max_surge = "100%"  # Faster scaling for minimal clusters
+      max_surge = "100%" # Faster scaling for minimal clusters
     }
   }
 
@@ -123,7 +123,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Web Application Routing addon (managed NGINX ingress)
   web_app_routing {
-    dns_zone_ids = []  # No automatic DNS management (App Gateway handles DNS)
+    dns_zone_ids = [] # No automatic DNS management (App Gateway handles DNS)
   }
 
   # Azure Managed Prometheus monitoring
@@ -137,18 +137,18 @@ resource "azurerm_kubernetes_cluster" "main" {
     balance_similar_node_groups      = false
     expander                         = "random"
     max_graceful_termination_sec     = "600"
-    max_node_provisioning_time       = "5m"   # Faster for B-series
-    max_unready_nodes                = 1       # Reduced for minimal clusters
+    max_node_provisioning_time       = "5m" # Faster for B-series
+    max_unready_nodes                = 1    # Reduced for minimal clusters
     max_unready_percentage           = 45
-    new_pod_scale_up_delay           = "5s"    # Faster scaling
-    scale_down_delay_after_add       = "5m"    # Faster scale-down
+    new_pod_scale_up_delay           = "5s" # Faster scaling
+    scale_down_delay_after_add       = "5m" # Faster scale-down
     scale_down_delay_after_delete    = "10s"
     scale_down_delay_after_failure   = "3m"
     scan_interval                    = "10s"
-    scale_down_unneeded              = "5m"    # Faster scale-down
+    scale_down_unneeded              = "5m" # Faster scale-down
     scale_down_unready               = "20m"
     scale_down_utilization_threshold = "0.5"
-    empty_bulk_delete_max            = "5"     # Reduced for minimal clusters
+    empty_bulk_delete_max            = "5" # Reduced for minimal clusters
     skip_nodes_with_local_storage    = false
     skip_nodes_with_system_pods      = true
   }
@@ -159,7 +159,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 # Grant Key Vault access to the workload identities
 resource "azurerm_role_assignment" "workload_identity_key_vault" {
   for_each = var.clusters
-  
+
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_user_assigned_identity.workload_identity[each.key].principal_id
@@ -168,7 +168,7 @@ resource "azurerm_role_assignment" "workload_identity_key_vault" {
 # Grant Storage access to the workload identities
 resource "azurerm_role_assignment" "workload_identity_storage" {
   for_each = var.clusters
-  
+
   scope                = azurerm_storage_account.main.id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azurerm_user_assigned_identity.workload_identity[each.key].principal_id
@@ -177,7 +177,7 @@ resource "azurerm_role_assignment" "workload_identity_storage" {
 # Grant SQL Database access to the workload identities
 resource "azurerm_role_assignment" "workload_identity_sql" {
   for_each = var.clusters
-  
+
   scope                = azurerm_mssql_database.main.id
   role_definition_name = "SQL DB Contributor"
   principal_id         = azurerm_user_assigned_identity.workload_identity[each.key].principal_id
@@ -186,16 +186,25 @@ resource "azurerm_role_assignment" "workload_identity_sql" {
 # Grant ACR access to AKS clusters (if ACR is enabled)
 resource "azurerm_role_assignment" "aks_acr_pull" {
   for_each = var.enable_container_registry ? var.clusters : {}
-  
+
   scope                = azurerm_container_registry.main[0].id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_kubernetes_cluster.main[each.key].kubelet_identity[0].object_id
 }
 
+# Grant the current user full Kubernetes admin via Azure RBAC (cluster-wide)
+resource "azurerm_role_assignment" "current_user_aks_rbac_cluster_admin" {
+  for_each = azurerm_kubernetes_cluster.main
+
+  scope                = azurerm_kubernetes_cluster.main[each.key].id
+  role_definition_name = "Azure Kubernetes Service RBAC Cluster Admin"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
 # Federated Identity Credentials for each cluster
 resource "azurerm_federated_identity_credential" "default_service_account" {
   for_each = var.clusters
-  
+
   name                = "fc-default-${var.environment}-${var.project}-${each.value.name_suffix}"
   resource_group_name = azurerm_resource_group.main.name
   audience            = ["api://AzureADTokenExchange"]
@@ -206,7 +215,7 @@ resource "azurerm_federated_identity_credential" "default_service_account" {
 
 resource "azurerm_federated_identity_credential" "app_service_account" {
   for_each = var.clusters
-  
+
   name                = "fc-app-${var.environment}-${var.project}-${each.value.name_suffix}"
   resource_group_name = azurerm_resource_group.main.name
   audience            = ["api://AzureADTokenExchange"]
@@ -217,7 +226,7 @@ resource "azurerm_federated_identity_credential" "app_service_account" {
 
 resource "azurerm_federated_identity_credential" "csi_driver" {
   for_each = var.clusters
-  
+
   name                = "fc-csi-${var.environment}-${var.project}-${each.value.name_suffix}"
   resource_group_name = azurerm_resource_group.main.name
   audience            = ["api://AzureADTokenExchange"]
@@ -235,7 +244,7 @@ resource "azurerm_federated_identity_credential" "csi_driver" {
 # Sample secrets in Key Vault with auto-generated connection strings for each cluster
 resource "azurerm_key_vault_secret" "database_connection" {
   for_each = var.clusters
-  
+
   name         = "database-connection-string-${each.value.name_suffix}"
   value        = "Server=${azurerm_mssql_server.main.fully_qualified_domain_name};Database=${azurerm_mssql_database.main.name};Authentication=Active Directory Managed Identity;User Id=${azurerm_user_assigned_identity.workload_identity[each.key].client_id};"
   key_vault_id = azurerm_key_vault.main.id
@@ -243,7 +252,7 @@ resource "azurerm_key_vault_secret" "database_connection" {
 
 resource "azurerm_key_vault_secret" "storage_connection" {
   for_each = var.clusters
-  
+
   name         = "storage-account-key-${each.value.name_suffix}"
   value        = azurerm_storage_account.main.primary_access_key
   key_vault_id = azurerm_key_vault.main.id

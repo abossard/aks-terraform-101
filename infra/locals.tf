@@ -18,20 +18,20 @@ locals {
 
   # Global resources
   log_analytics_name = "log-aks-${var.environment}-${var.location_code}-001"
-  
+
   # Cluster-specific configurations
   cluster_configs = {
     for k, v in var.clusters : k => merge(v, {
       # AKS naming
       aks_name = "aks-${var.environment}-${var.project}-${v.name_suffix}-${var.location_code}-001"
-      
+
       # Networking
       subnet_name = "snet-${v.name_suffix}-${var.environment}-${var.location_code}-001"
-      nsg_name = "nsg-${v.name_suffix}-${var.environment}-${var.location_code}-001"
-      
+      nsg_name    = "nsg-${v.name_suffix}-${var.environment}-${var.location_code}-001"
+
       # Reserved internal IPs for NGINX ingress
       nginx_internal_ip = cidrhost(v.subnet_cidr, 100)
-      
+
       # Workload identity
       workload_identity_name = "id-workload-${v.name_suffix}-${var.environment}-${var.location_code}-001"
     })
@@ -75,12 +75,12 @@ locals {
 
   # Private DNS zones (fixed names)
   private_dns_zones = {
-    key_vault     = "privatelink.vaultcore.azure.net"
-    storage_blob  = "privatelink.blob.core.windows.net"
-    storage_file  = "privatelink.file.core.windows.net"
-    sql_database  = "privatelink.database.windows.net"
+    key_vault    = "privatelink.vaultcore.azure.net"
+    storage_blob = "privatelink.blob.core.windows.net"
+    storage_file = "privatelink.file.core.windows.net"
+    sql_database = "privatelink.database.windows.net"
   }
-  
+
   # Storage endpoints configuration
   storage_endpoints = {
     blob = {
@@ -88,45 +88,45 @@ locals {
       dns_zone    = "storage_blob"
     }
     file = {
-      subresource = "file" 
+      subresource = "file"
       dns_zone    = "storage_file"
     }
   }
-  
+
   # Common security rules for NSGs
   common_nsg_rules = {
     allow_vnet_inbound = {
-      priority   = 1100
-      direction  = "Inbound"
-      access     = "Allow"
-      protocol   = "*"
-      source_port_range = "*"
-      destination_port_range = "*"
-      source_address_prefix = "VirtualNetwork"
+      priority                   = 1100
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "VirtualNetwork"
       destination_address_prefix = "VirtualNetwork"
     }
     allow_vnet_outbound = {
-      priority   = 1100
-      direction  = "Outbound"
-      access     = "Allow"
-      protocol   = "*"
-      source_port_range = "*"
-      destination_port_range = "*"
-      source_address_prefix = "VirtualNetwork"
+      priority                   = 1100
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "VirtualNetwork"
       destination_address_prefix = "VirtualNetwork"
     }
     allow_internet_outbound = {
-      priority   = 1000
-      direction  = "Outbound"
-      access     = "Allow"
-      protocol   = "*"
-      source_port_range = "*"
-      destination_port_range = "*"
-      source_address_prefix = "*"
+      priority                   = 1000
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "*"
       destination_address_prefix = "Internet"
     }
   }
-  
+
   # Password configurations
   password_configs = {
     sql_admin = {
@@ -151,25 +151,25 @@ locals {
 
   # Common tags
   common_tags = merge(var.tags, {
-    Environment    = var.environment
-    Project        = var.project
-    Location       = var.location
-    FirewallMode   = var.firewall_enforcement_enabled ? "Enforcement" : "Audit"
-    DeployedBy     = coalesce(var.security_email, "terraform-deployment")
-    DeployedAt     = formatdate("YYYY-MM-DD'T'hh:mm:ssZ", timestamp())
+    Environment  = var.environment
+    Project      = var.project
+    Location     = var.location
+    FirewallMode = var.firewall_enforcement_enabled ? "Enforcement" : "Audit"
+    DeployedBy   = coalesce(var.security_email, "terraform-deployment")
+    DeployedAt   = formatdate("YYYY-MM-DD'T'hh:mm:ssZ", timestamp())
   })
 
   # Auto-detected user information with fallbacks
   detected_user_email = coalesce(
     var.security_email,
-    "admin@example.com"  # Default fallback if not provided
+    "admin@example.com" # Default fallback if not provided
   )
-  
+
   detected_sql_admin_login = coalesce(
     var.sql_azuread_admin_login,
     local.detected_user_email
   )
-  
+
   detected_sql_admin_object_id = coalesce(
     var.sql_azuread_admin_object_id,
     data.azurerm_client_config.current.object_id

@@ -5,7 +5,7 @@
 # Generate secure passwords
 resource "random_password" "generated" {
   for_each = local.password_configs
-  
+
   length           = each.value.length
   special          = true
   upper            = true
@@ -30,7 +30,7 @@ resource "random_string" "unique_suffix" {
 # Store generated passwords securely in Key Vault
 resource "azurerm_key_vault_secret" "passwords" {
   for_each = local.password_configs
-  
+
   name         = each.value.secret_name
   value        = random_password.generated[each.key].result
   key_vault_id = azurerm_key_vault.main.id

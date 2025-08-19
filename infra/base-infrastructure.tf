@@ -39,7 +39,7 @@ resource "azurerm_virtual_network" "main" {
 # AKS Cluster Subnets
 resource "azurerm_subnet" "clusters" {
   for_each = var.clusters
-  
+
   name                 = local.cluster_configs[each.key].subnet_name
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
@@ -85,7 +85,7 @@ resource "azurerm_subnet" "private_endpoints" {
 # Network Security Groups for AKS Clusters
 resource "azurerm_network_security_group" "clusters" {
   for_each = var.clusters
-  
+
   name                = local.cluster_configs[each.key].nsg_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
@@ -178,7 +178,7 @@ resource "azurerm_network_security_group" "app_gateway" {
     source_port_range          = "*"
     destination_port_ranges    = ["80", "443"]
     source_address_prefix      = "*"
-    destination_address_prefix = "10.240.0.0/16"  # VNet address space
+    destination_address_prefix = "10.240.0.0/16" # VNet address space
   }
 
   dynamic "security_rule" {
@@ -234,7 +234,7 @@ resource "azurerm_network_security_group" "private_endpoints" {
 # Associate NSGs with Cluster Subnets
 resource "azurerm_subnet_network_security_group_association" "clusters" {
   for_each = var.clusters
-  
+
   subnet_id                 = azurerm_subnet.clusters[each.key].id
   network_security_group_id = azurerm_network_security_group.clusters[each.key].id
 }

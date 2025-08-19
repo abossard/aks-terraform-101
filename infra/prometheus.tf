@@ -51,7 +51,7 @@ resource "azurerm_monitor_data_collection_rule" "prometheus" {
 # Associate DCR with AKS Clusters
 resource "azurerm_monitor_data_collection_rule_association" "prometheus" {
   for_each = var.clusters
-  
+
   name                    = "dcra-${var.environment}-${var.project}-${each.value.name_suffix}-${var.location_code}-001"
   target_resource_id      = azurerm_kubernetes_cluster.main[each.key].id
   data_collection_rule_id = azurerm_monitor_data_collection_rule.prometheus.id

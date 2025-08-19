@@ -46,7 +46,7 @@ resource "sqlsso_mssql_server_aad_account" "current_user_owner" {
 # Create federated identity credentials for each cluster
 resource "azurerm_federated_identity_credential" "sql_app_identity" {
   for_each = var.clusters
-  
+
   name                = "fc-sql-app-${each.key}-${var.environment}-${var.project}"
   resource_group_name = azurerm_resource_group.main.name
   audience            = ["api://AzureADTokenExchange"]
