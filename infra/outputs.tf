@@ -267,6 +267,14 @@ output "aks_cheatsheets" {
   }
 }
 
+# Rendered per-cluster cluster setup scripts
+output "cluster_setup_scripts" {
+  description = "Paths to the generated per-cluster setup scripts (Bash)"
+  value = {
+    for k, v in local_file.cluster_setup : k => v.filename
+  }
+}
+
 # Kubernetes Configuration
 output "kube_config_raw" {
   description = "Raw kubeconfig for the AKS clusters"

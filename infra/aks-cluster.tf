@@ -315,6 +315,30 @@ resource "local_file" "cheatsheets" {
   filename = "${path.module}/cheatsheets/generated/${each.key}-cheatsheet.md"
 }
 
+# -----------------------------------------------------------------------------
+# Render per-cluster setup scripts (Bash)
+# Connects to the cluster, applies NGINX CRD, and prints kube-system/nodes
+# -----------------------------------------------------------------------------
+locals {
+  cluster_setup_scripts = {
+    for k, v in var.clusters : k => templatefile(
+      "${path.module}/scripts/cluster-setup.tmpl.sh",
+      {
+        cluster_name   = local.cluster_configs[k].aks_name,
+        resource_group = azurerm_resource_group.main.name,
+        nginx_manifest = "${path.module}/k8s/generated/${k}-nginx-internal-controller.yaml"
+      }
+    )
+  }
+}
+
+resource "local_file" "cluster_setup" {
+  for_each = local.cluster_setup_scripts
+
+  content  = each.value
+  filename = "${path.module}/k8s/generated/${each.key}-cluster-setup.sh"
+}
+
 # Sample secrets in Key Vault with auto-generated connection strings for each cluster
 resource "azurerm_key_vault_secret" "database_connection" {
   for_each = var.clusters
