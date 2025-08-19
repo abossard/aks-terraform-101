@@ -7,7 +7,6 @@ resource "azurerm_private_dns_zone" "main" {
 
   name                = each.value
   resource_group_name = azurerm_resource_group.main.name
-  tags                = local.common_tags
 }
 
 # VNet Links for DNS Zones
@@ -19,7 +18,6 @@ resource "azurerm_private_dns_zone_virtual_network_link" "main" {
   private_dns_zone_name = azurerm_private_dns_zone.main[each.key].name
   virtual_network_id    = azurerm_virtual_network.main.id
   registration_enabled  = false
-  tags                  = local.common_tags
 }
 
 # Azure Key Vault
@@ -48,7 +46,6 @@ resource "azurerm_key_vault" "main" {
     ip_rules       = [chomp(data.http.myip.response_body)] # Current public IP
   }
 
-  tags = local.common_tags
 }
 
 # Grant current user Key Vault Administrator role for initial setup
@@ -111,7 +108,6 @@ resource "azurerm_storage_account" "main" {
     }
   }
 
-  tags = local.common_tags
 }
 
 # Private Endpoints for Storage Account
@@ -135,7 +131,6 @@ resource "azurerm_private_endpoint" "storage" {
     private_dns_zone_ids = [azurerm_private_dns_zone.main[each.value.dns_zone].id]
   }
 
-  tags = local.common_tags
 }
 
 # SQL Server
@@ -197,7 +192,6 @@ resource "azurerm_public_ip" "firewall" {
   allocation_method   = "Static"
   sku                 = "Standard"
   zones               = ["1", "2", "3"]
-  tags                = local.common_tags
 }
 
 # Azure Firewall Policy
@@ -212,7 +206,6 @@ resource "azurerm_firewall_policy" "main" {
   }
 
   threat_intelligence_mode = var.firewall_enforcement_enabled ? "Alert" : "Off"
-  tags                     = local.common_tags
 }
 
 # Firewall Policy Rule Collection Group
@@ -345,7 +338,6 @@ resource "azurerm_firewall" "main" {
     public_ip_address_id = azurerm_public_ip.firewall.id
   }
 
-  tags = local.common_tags
 }
 
 # Route Table for AKS Subnet (force traffic through firewall)
@@ -361,7 +353,6 @@ resource "azurerm_route_table" "aks_routes" {
     next_hop_in_ip_address = azurerm_firewall.main.ip_configuration[0].private_ip_address
   }
 
-  tags = local.common_tags
 }
 
 # Route table association removed - using loadBalancer outbound type instead of userDefinedRouting

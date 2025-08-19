@@ -6,7 +6,6 @@ resource "azurerm_user_assigned_identity" "sql_app_identity" {
   name                = "id-sql-app-${var.environment}-${var.location_code}-001"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-  tags                = local.common_tags
 }
 
 # Configure the sqlsso provider

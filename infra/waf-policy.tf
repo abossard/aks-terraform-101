@@ -70,5 +70,4 @@ resource "azurerm_web_application_firewall_policy" "main" {
     }
   }
 
-  tags = local.common_tags
 }

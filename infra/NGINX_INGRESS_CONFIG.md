@@ -76,20 +76,26 @@ spec:
     app.kubernetes.io/component: controller
 ```
 
-## Helm Chart Configuration (Web App Routing Addon)
+## Application Routing add-on (Managed NGINX) with static private IP
 
-If using the Web App Routing addon or deploying NGINX via Helm, configure the service annotations:
+The add-on uses a CRD named `NginxIngressController`. Create an internal controller and bind it to the reserved IP using annotations:
 
 ```yaml
-controller:
-  service:
-    type: LoadBalancer
-    annotations:
-      service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-      service.beta.kubernetes.io/azure-load-balancer-static-ip: "10.240.0.100"  # Use cluster-specific IP
-      service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "snet-public-prod-eus2-001"  # Use cluster-specific subnet
-    loadBalancerIP: "10.240.0.100"  # Also set this for compatibility
+apiVersion: approuting.kubernetes.azure.com/v1alpha1
+kind: NginxIngressController
+metadata:
+  name: nginx-internal
+  namespace: app-routing-system
+spec:
+  ingressClassName: nginx-internal
+  controllerNamePrefix: nginx-internal
+  loadBalancerAnnotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    service.beta.kubernetes.io/azure-load-balancer-ipv4: "10.240.0.100"
+    service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "snet-public-prod-eus2-001"
 ```
+
+Apply the ready-made template in `infra/k8s/nginx-internal-controller.yaml` and replace `${NGINX_INTERNAL_IP}` and `${AKS_SUBNET_NAME}`. The IPv4 annotation is preferred over `spec.loadBalancerIP` per AKS docs.
 
 ## Getting Configuration Values from Terraform
 
@@ -99,8 +105,8 @@ Use these Terraform outputs to get the required values for NGINX configuration:
 # Get NGINX internal IPs
 terraform output nginx_internal_ips
 
-# Get cluster subnet names  
-terraform output cluster_subnet_ids
+# Get cluster subnet names (use with nginx_ingress_config below)
+terraform output -json cluster_subnet_ids | jq
 
 # Get full cluster configuration
 terraform output aks_clusters
@@ -110,6 +116,9 @@ Example output usage:
 ```bash
 PUBLIC_IP=$(terraform output -json nginx_internal_ips | jq -r '.public')
 BACKEND_IP=$(terraform output -json nginx_internal_ips | jq -r '.backend')
+# From combined config
+PUBLIC_SUBNET=$(terraform output -json nginx_ingress_config | jq -r '.public.subnet_name')
+BACKEND_SUBNET=$(terraform output -json nginx_ingress_config | jq -r '.backend.subnet_name')
 ```
 
 ## Application Gateway Integration

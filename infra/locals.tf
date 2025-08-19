@@ -149,14 +149,12 @@ locals {
     }
   }
 
-  # Common tags
+  # Common tags (stable; avoid time-based or conflicting keys)
+  # - Use var.tags as the source of truth for Environment/Project/Location
+  # - Add only deterministic computed tags here
   common_tags = merge(var.tags, {
-    Environment  = var.environment
-    Project      = var.project
-    Location     = var.location
     FirewallMode = var.firewall_enforcement_enabled ? "Enforcement" : "Audit"
     DeployedBy   = coalesce(var.security_email, "terraform-deployment")
-    DeployedAt   = formatdate("YYYY-MM-DD'T'hh:mm:ssZ", timestamp())
   })
 
   # Auto-detected user information with fallbacks

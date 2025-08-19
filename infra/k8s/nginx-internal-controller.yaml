@@ -1,0 +1,60 @@
+apiVersion: approuting.kubernetes.azure.com/v1alpha1
+kind: NginxIngressController
+metadata:
+  # Apply this manifest to each cluster that should use a private static IP
+  name: nginx-internal
+  namespace: app-routing-system
+spec:
+  # Use a dedicated ingress class for your internal traffic
+  ingressClassName: nginx-internal
+  controllerNamePrefix: nginx-internal
+  # Ensure the service is an internal LoadBalancer and uses your reserved static IP
+  loadBalancerAnnotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    # Prefer ipv4 annotation over deprecated spec.loadBalancerIP
+    service.beta.kubernetes.io/azure-load-balancer-ipv4: "${NGINX_INTERNAL_IP}"
+    # Pin to the AKS subnet by name to avoid cross-subnet issues
+    service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "${AKS_SUBNET_NAME}"
+
+  # Optional: scope the controller to a namespace
+  # namespaceSelector:
+  #   matchLabels:
+  #     ingress-scope: internal
+
+  # Optional: customize NGINX config
+  # nginxConfigMapData:
+  #   use-forwarded-headers: "true"
+  #   proxy-body-size: "32m"
+
+---
+# Example Ingress using the internal controller class
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-internal
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx-internal
+spec:
+  ingressClassName: nginx-internal
+  rules:
+    - host: internal.example.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+
+# How to use this file:
+# 1) Set env vars from Terraform outputs per cluster:
+#    export NGINX_INTERNAL_IP=$(terraform output -json nginx_internal_ips | jq -r '.public')
+#    export AKS_SUBNET_NAME=$(terraform output -json nginx_ingress_config | jq -r '.public.subnet_name')
+# 2) Apply to the cluster context you want:
+#    kubectl apply -f infra/k8s/nginx-internal-controller.yaml
+# 3) Verify the service gets the exact IP:
+#    kubectl get svc -n app-routing-system -l app.kubernetes.io/component=controller -o wide
+#    The EXTERNAL-IP should equal $NGINX_INTERNAL_IP

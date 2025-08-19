@@ -48,6 +48,7 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+
 }
 
 # Kubernetes and Helm providers removed - deploy K8s resources manually after infrastructure
