@@ -208,19 +208,9 @@ resource "azurerm_federated_identity_credential" "default_service_account" {
   audience            = ["api://AzureADTokenExchange"]
   issuer              = azurerm_kubernetes_cluster.main[each.key].oidc_issuer_url
   parent_id           = azurerm_user_assigned_identity.workload_identity[each.key].id
-  subject             = "system:serviceaccount:default:workload-identity-sa"
-}
-
-resource "azurerm_federated_identity_credential" "app_service_account" {
-  for_each = var.clusters
-
-  name                = "fc-app-${var.environment}-${var.project}-${each.value.name_suffix}"
-  resource_group_name = azurerm_resource_group.main.name
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = azurerm_kubernetes_cluster.main[each.key].oidc_issuer_url
-  parent_id           = azurerm_user_assigned_identity.workload_identity[each.key].id
   subject             = "system:serviceaccount:${var.app_namespace}:${var.app_service_account}"
 }
+
 
 resource "azurerm_federated_identity_credential" "csi_driver" {
   for_each = var.clusters
@@ -238,6 +228,36 @@ resource "azurerm_federated_identity_credential" "csi_driver" {
 # 1. az aks get-credentials --resource-group rg-prod-aks101-eus2-001 --name aks-prod-aks101-eus2-001 --admin
 # 2. kubectl create namespace aks-app
 # 3. Create workload identity service account and SecretProviderClass manually
+
+# -----------------------------------------------------------------------------
+# Render ServiceAccount YAML per cluster (default namespace) for Workload Identity
+# -----------------------------------------------------------------------------
+locals {
+  service_account_name = var.app_service_account
+}
+
+data "azurerm_client_config" "tenant" {}
+
+locals {
+  service_account_manifests = {
+    for k, v in var.clusters : k => templatefile(
+      "${path.module}/k8s/serviceaccount.tmpl.yaml",
+      {
+        service_account_name        = local.service_account_name,
+        workload_identity_client_id = azurerm_user_assigned_identity.workload_identity[k].client_id,
+        tenant_id                   = data.azurerm_client_config.tenant.tenant_id,
+        namespace                   = var.app_namespace
+      }
+    )
+  }
+}
+
+resource "local_file" "service_accounts" {
+  for_each = local.service_account_manifests
+
+  content  = each.value
+  filename = "${path.module}/k8s/${each.key}-serviceaccount.yaml"
+}
 
 # Sample secrets in Key Vault with auto-generated connection strings for each cluster
 resource "azurerm_key_vault_secret" "database_connection" {

@@ -271,6 +271,14 @@ output "app_service_account" {
   value       = var.app_service_account
 }
 
+# Rendered ServiceAccount YAMLs (per cluster)
+output "service_account_manifest_files" {
+  description = "Paths to the generated ServiceAccount YAML files for each cluster"
+  value = {
+    for k, v in local_file.service_accounts : k => v.filename
+  }
+}
+
 # Useful URLs and Endpoints
 output "application_url" {
   description = "URL to access the application via Application Gateway"

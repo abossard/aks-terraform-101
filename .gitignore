@@ -486,3 +486,4 @@ $RECYCLE.BIN/
 *.tfstate
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
+*.tmpl.yaml

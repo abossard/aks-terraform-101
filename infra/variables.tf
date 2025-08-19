@@ -139,7 +139,7 @@ variable "security_email" {
 variable "app_namespace" {
   description = "Kubernetes namespace for the application"
   type        = string
-  default     = "aks-app"
+  default     = "default"
 }
 
 variable "app_service_account" {
