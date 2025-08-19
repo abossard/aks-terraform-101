@@ -316,7 +316,11 @@ output "deployment_summary" {
       for k, v in azurerm_kubernetes_cluster.main : k => {
         name      = v.name
         vm_size   = var.clusters[k].vm_size
-        node_count = var.clusters[k].node_count
+        scaling = {
+          autoscaling_enabled = true
+          min_count           = var.clusters[k].min_count
+          max_count           = var.clusters[k].max_count
+        }
         nginx_ip  = local.cluster_configs[k].nginx_internal_ip
       }
     }

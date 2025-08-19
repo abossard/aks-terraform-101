@@ -22,8 +22,12 @@ resource "sqlsso_mssql_server_aad_account" "sql_app_identity" {
   sql_server_dns = azurerm_mssql_server.main.fully_qualified_domain_name
   database       = azurerm_mssql_database.main.name
   account_name   = azurerm_user_assigned_identity.sql_app_identity.name
-  object_id      = azurerm_user_assigned_identity.sql_app_identity.client_id
+  object_id      = azurerm_user_assigned_identity.sql_app_identity.principal_id
   role           = "owner"
+
+  depends_on = [
+    azurerm_mssql_firewall_rule.client_ip
+  ]
 }
 
 # Make the current Terraform user an owner of the SQL Server
@@ -33,6 +37,10 @@ resource "sqlsso_mssql_server_aad_account" "current_user_owner" {
   account_name   = local.detected_sql_admin_login
   object_id      = local.detected_sql_admin_object_id
   role           = "owner"
+
+  depends_on = [
+    azurerm_mssql_firewall_rule.client_ip
+  ]
 }
 
 # Create federated identity credentials for each cluster

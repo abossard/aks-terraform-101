@@ -73,7 +73,6 @@ variable "clusters" {
   type = map(object({
     name_suffix = string
     subnet_cidr = string
-    node_count  = number
     min_count   = number
     max_count   = number
     vm_size     = string
@@ -82,7 +81,6 @@ variable "clusters" {
     public = {
       name_suffix = "public"
       subnet_cidr = "10.240.0.0/24"
-      node_count  = 1
       min_count   = 1
       max_count   = 3
       vm_size     = "Standard_D2s_v3"
@@ -90,7 +88,6 @@ variable "clusters" {
     backend = {
       name_suffix = "backend"
       subnet_cidr = "10.240.4.0/24"
-      node_count  = 1
       min_count   = 1
       max_count   = 2
       vm_size     = "Standard_D2s_v3"

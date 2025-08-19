@@ -16,10 +16,6 @@ dns_service_ip    = "172.16.0.10"
 
 # AKS Configuration
 kubernetes_version = "1.31.9"
-node_count        = 3
-min_node_count    = 1
-max_node_count    = 10
-node_vm_size      = "Standard_D4s_v3"
 
 # SQL Server Configuration (Auto-detected from current user)
 sql_admin_username = "sqladmin"

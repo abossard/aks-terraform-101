@@ -27,6 +27,10 @@ terraform {
       source  = "jason-johnson/sqlsso"
       version = "1.4.0"
     }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.4"
+    }
   }
 }
 
@@ -50,3 +54,8 @@ provider "azurerm" {
 
 # Data sources
 data "azurerm_client_config" "current" {}
+
+# Detect current public IP for temporary firewall allowances (no auth)
+data "http" "myip" {
+  url = "https://api.ipify.org?format=text"
+}

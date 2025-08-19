@@ -44,8 +44,8 @@ resource "azurerm_key_vault" "main" {
 
   network_acls {
     bypass         = "AzureServices"
-    default_action = "Allow"  # Allow all for initial deployment
-    ip_rules       = ["79.127.184.28"]  # Add current public IP
+  default_action = "Allow"  # Allow all for initial deployment
+  ip_rules       = [chomp(data.http.myip.response_body)]  # Current public IP
   }
 
   tags = local.common_tags
@@ -185,8 +185,8 @@ resource "azurerm_mssql_database" "main" {
 resource "azurerm_mssql_firewall_rule" "client_ip" {
   name             = "AllowCurrentClientIP"
   server_id        = azurerm_mssql_server.main.id
-  start_ip_address = "79.127.184.28"
-  end_ip_address   = "79.127.184.28"
+  start_ip_address = chomp(data.http.myip.response_body)
+  end_ip_address   = chomp(data.http.myip.response_body)
 }
 
 # Azure Firewall Public IP

@@ -54,7 +54,6 @@ resource "azurerm_kubernetes_cluster" "main" {
     auto_scaling_enabled = true
     min_count            = each.value.min_count
     max_count            = each.value.max_count
-    node_count           = each.value.node_count
 
     # Minimal node configuration for cost savings  
     os_disk_type    = "Managed" # Changed from Ephemeral - doesn't fit in Standard_D2s_v3
