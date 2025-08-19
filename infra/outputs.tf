@@ -251,6 +251,14 @@ output "nginx_ingress_config" {
   }
 }
 
+# Rendered NginxIngressController manifests (per cluster)
+output "nginx_controller_manifest_files" {
+  description = "Paths to the generated NginxIngressController YAML files for each cluster"
+  value = {
+    for k, v in local_file.nginx_internal_controllers : k => v.filename
+  }
+}
+
 # Kubernetes Configuration
 output "kube_config_raw" {
   description = "Raw kubeconfig for the AKS clusters"
