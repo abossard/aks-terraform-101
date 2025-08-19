@@ -259,6 +259,14 @@ output "nginx_controller_manifest_files" {
   }
 }
 
+# Rendered per-cluster AKS cheatsheets
+output "aks_cheatsheets" {
+  description = "Paths to the generated AKS cheatsheets (Markdown) for each cluster"
+  value = {
+    for k, v in local_file.cheatsheets : k => v.filename
+  }
+}
+
 # Kubernetes Configuration
 output "kube_config_raw" {
   description = "Raw kubeconfig for the AKS clusters"

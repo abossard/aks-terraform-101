@@ -285,6 +285,36 @@ resource "local_file" "nginx_internal_controllers" {
   filename = "${path.module}/k8s/generated/${each.key}-nginx-internal-controller.yaml"
 }
 
+# -----------------------------------------------------------------------------
+# Render per-cluster AKS cheatsheets (Markdown)
+# -----------------------------------------------------------------------------
+locals {
+  cheatsheets = {
+    for k, v in var.clusters : k => templatefile(
+      "${path.module}/cheatsheets/aks-cheatsheet.tmpl.md",
+      {
+        cluster_key          = k,
+        cluster_name         = local.cluster_configs[k].aks_name,
+        aks_name             = local.cluster_configs[k].aks_name,
+        resource_group       = azurerm_resource_group.main.name,
+        app_namespace        = var.app_namespace,
+        service_account_name = var.app_service_account,
+        nginx_internal_ip    = local.cluster_configs[k].nginx_internal_ip,
+        subnet_name          = local.cluster_configs[k].subnet_name,
+        app_gw_ip            = azurerm_public_ip.app_gateway.ip_address,
+        public_host          = "app.yourdomain.com"
+      }
+    )
+  }
+}
+
+resource "local_file" "cheatsheets" {
+  for_each = local.cheatsheets
+
+  content  = each.value
+  filename = "${path.module}/cheatsheets/generated/${each.key}-cheatsheet.md"
+}
+
 # Sample secrets in Key Vault with auto-generated connection strings for each cluster
 resource "azurerm_key_vault_secret" "database_connection" {
   for_each = var.clusters

@@ -489,3 +489,6 @@ infra/terraform.tfstate.backup
  
 # Generated Kubernetes manifests (rendered by Terraform)
 infra/k8s/generated/
+
+# Generated cheatsheets (rendered by Terraform)
+infra/cheatsheets/generated/
