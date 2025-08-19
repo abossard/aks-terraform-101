@@ -9,11 +9,11 @@ terraform {
     }
     local = {
       source  = "hashicorp/local"
-      version = "~> 2.4"
+  version = "~> 2.5"
     }
     random = {
       source  = "hashicorp/random"
-      version = "~> 3.6"
+  version = "~> 3.7"
     }
     tls = {
       source  = "hashicorp/tls"
@@ -23,17 +23,13 @@ terraform {
       source  = "chilicat/pkcs12"
       version = "~> 0.0.7"
     }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.2"
-    }
     sqlsso = {
       source  = "jason-johnson/sqlsso"
       version = "1.4.0"
     }
     http = {
       source  = "hashicorp/http"
-      version = "~> 3.4"
+  version = "~> 3.5"
     }
   }
 }
