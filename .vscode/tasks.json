@@ -8,6 +8,11 @@
 			"problemMatcher": [
 				"$terraform"
 			]
+		},
+		{
+			"label": "terraform init -upgrade && validate/plan",
+			"type": "shell",
+			"command": "cd /Users/abossard/Desktop/projects/aks-terraform-101/infra && terraform init -upgrade && terraform fmt -check && terraform validate && terraform plan -compact-warnings -out=tfplan"
 		}
 	]
 }

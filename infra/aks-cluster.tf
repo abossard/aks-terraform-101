@@ -154,6 +154,25 @@ resource "azurerm_kubernetes_cluster" "main" {
   tags = local.common_tags
 }
 
+# Ensure AKS identities can manage/read networking for ILB operations
+# Fixes: AuthorizationFailed on Microsoft.Network/virtualNetworks/subnets/read when creating internal LoadBalancer
+resource "azurerm_role_assignment" "aks_identity_network_contributor_vnet" {
+  for_each = var.clusters
+
+  scope                = azurerm_virtual_network.main.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_kubernetes_cluster.main[each.key].identity[0].principal_id
+}
+
+# Some operations may use the kubelet identity; grant it as well for safety
+resource "azurerm_role_assignment" "aks_kubelet_network_contributor_vnet" {
+  for_each = var.clusters
+
+  scope                = azurerm_virtual_network.main.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_kubernetes_cluster.main[each.key].kubelet_identity[0].object_id
+}
+
 # Grant Key Vault access to the workload identities
 resource "azurerm_role_assignment" "workload_identity_key_vault" {
   for_each = var.clusters
