@@ -67,28 +67,35 @@ variable "kubernetes_version" {
   default     = "1.28.5"
 }
 
-variable "node_count" {
-  description = "Initial number of nodes in the default node pool"
-  type        = number
-  default     = 3
-}
-
-variable "min_node_count" {
-  description = "Minimum number of nodes for autoscaling"
-  type        = number
-  default     = 1
-}
-
-variable "max_node_count" {
-  description = "Maximum number of nodes for autoscaling"
-  type        = number
-  default     = 10
-}
-
-variable "node_vm_size" {
-  description = "Virtual machine size for AKS nodes"
-  type        = string
-  default     = "Standard_D4s_v3"
+# Multiple AKS Clusters Configuration
+variable "clusters" {
+  description = "AKS cluster configurations"
+  type = map(object({
+    name_suffix = string
+    subnet_cidr = string
+    node_count  = number
+    min_count   = number
+    max_count   = number
+    vm_size     = string
+  }))
+  default = {
+    public = {
+      name_suffix = "public"
+      subnet_cidr = "10.240.0.0/24"
+      node_count  = 1
+      min_count   = 1
+      max_count   = 3
+      vm_size     = "Standard_D2s_v3"
+    }
+    backend = {
+      name_suffix = "backend"
+      subnet_cidr = "10.240.4.0/24"
+      node_count  = 1
+      min_count   = 1
+      max_count   = 2
+      vm_size     = "Standard_D2s_v3"
+    }
+  }
 }
 
 # Security Configuration (Auto-detected or defaulted)
@@ -164,6 +171,16 @@ variable "secret_rotation_interval" {
   description = "Interval for secret rotation"
   type        = string
   default     = "2m"
+}
+
+variable "firewall_enforcement_enabled" {
+  description = "Enable firewall rule enforcement (true) or audit mode only (false)"
+  type        = bool
+  default     = false
+  validation {
+    condition     = can(var.firewall_enforcement_enabled)
+    error_message = "Firewall enforcement must be true or false."
+  }
 }
 
 # Tags

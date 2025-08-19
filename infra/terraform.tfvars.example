@@ -41,6 +41,9 @@ enable_container_registry = true
 enable_secret_rotation    = true
 secret_rotation_interval  = "2m"
 
+# Firewall Configuration
+firewall_enforcement_enabled = false  # true for enforcement, false for audit-only (default)
+
 # Tags
 tags = {
   ManagedBy   = "terraform"

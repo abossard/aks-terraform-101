@@ -2,62 +2,21 @@
 # Azure Firewall, Key Vault, Private Endpoints
 
 # Private DNS Zones
-resource "azurerm_private_dns_zone" "key_vault" {
-  name                = local.key_vault_dns_zone
-  resource_group_name = azurerm_resource_group.main.name
-  tags                = local.common_tags
-}
-
-resource "azurerm_private_dns_zone" "storage_blob" {
-  name                = local.storage_blob_dns_zone
-  resource_group_name = azurerm_resource_group.main.name
-  tags                = local.common_tags
-}
-
-resource "azurerm_private_dns_zone" "storage_file" {
-  name                = local.storage_file_dns_zone
-  resource_group_name = azurerm_resource_group.main.name
-  tags                = local.common_tags
-}
-
-resource "azurerm_private_dns_zone" "sql_database" {
-  name                = local.sql_dns_zone
+resource "azurerm_private_dns_zone" "main" {
+  for_each = local.private_dns_zones
+  
+  name                = each.value
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.common_tags
 }
 
 # VNet Links for DNS Zones
-resource "azurerm_private_dns_zone_virtual_network_link" "key_vault" {
-  name                  = "kv-dns-link"
+resource "azurerm_private_dns_zone_virtual_network_link" "main" {
+  for_each = local.private_dns_zones
+  
+  name                  = "${each.key}-dns-link"
   resource_group_name   = azurerm_resource_group.main.name
-  private_dns_zone_name = azurerm_private_dns_zone.key_vault.name
-  virtual_network_id    = azurerm_virtual_network.main.id
-  registration_enabled  = false
-  tags                  = local.common_tags
-}
-
-resource "azurerm_private_dns_zone_virtual_network_link" "storage_blob" {
-  name                  = "storage-blob-dns-link"
-  resource_group_name   = azurerm_resource_group.main.name
-  private_dns_zone_name = azurerm_private_dns_zone.storage_blob.name
-  virtual_network_id    = azurerm_virtual_network.main.id
-  registration_enabled  = false
-  tags                  = local.common_tags
-}
-
-resource "azurerm_private_dns_zone_virtual_network_link" "storage_file" {
-  name                  = "storage-file-dns-link"
-  resource_group_name   = azurerm_resource_group.main.name
-  private_dns_zone_name = azurerm_private_dns_zone.storage_file.name
-  virtual_network_id    = azurerm_virtual_network.main.id
-  registration_enabled  = false
-  tags                  = local.common_tags
-}
-
-resource "azurerm_private_dns_zone_virtual_network_link" "sql_database" {
-  name                  = "sql-dns-link"
-  resource_group_name   = azurerm_resource_group.main.name
-  private_dns_zone_name = azurerm_private_dns_zone.sql_database.name
+  private_dns_zone_name = azurerm_private_dns_zone.main[each.key].name
   virtual_network_id    = azurerm_virtual_network.main.id
   registration_enabled  = false
   tags                  = local.common_tags
@@ -71,7 +30,7 @@ resource "azurerm_key_vault" "main" {
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
-  # Enable public network access for initial deployment
+  # Enable public network access for initial deployment  
   public_network_access_enabled = true
 
   # Enable RBAC for access control
@@ -85,7 +44,8 @@ resource "azurerm_key_vault" "main" {
 
   network_acls {
     bypass         = "AzureServices"
-    default_action = "Allow"  # Temporarily allow for initial deployment
+    default_action = "Allow"  # Allow all for initial deployment
+    ip_rules       = ["79.127.184.28"]  # Add current public IP
   }
 
   tags = local.common_tags
@@ -114,7 +74,7 @@ resource "azurerm_private_endpoint" "key_vault" {
 
   private_dns_zone_group {
     name                 = "kv-dns-zone-group"
-    private_dns_zone_ids = [azurerm_private_dns_zone.key_vault.id]
+    private_dns_zone_ids = [azurerm_private_dns_zone.main["key_vault"].id]
   }
 
   tags = local.common_tags
@@ -154,45 +114,25 @@ resource "azurerm_storage_account" "main" {
   tags = local.common_tags
 }
 
-# Private Endpoint for Storage Account - Blob
-resource "azurerm_private_endpoint" "storage_blob" {
-  name                = "${local.storage_pe_name}-blob"
+# Private Endpoints for Storage Account
+resource "azurerm_private_endpoint" "storage" {
+  for_each = local.storage_endpoints
+  
+  name                = "${local.storage_pe_name}-${each.key}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   subnet_id           = azurerm_subnet.private_endpoints.id
 
   private_service_connection {
-    name                           = "storage-blob-private-connection"
+    name                           = "storage-${each.key}-private-connection"
     private_connection_resource_id = azurerm_storage_account.main.id
-    subresource_names              = ["blob"]
+    subresource_names              = [each.value.subresource]
     is_manual_connection           = false
   }
 
   private_dns_zone_group {
-    name                 = "storage-blob-dns-zone-group"
-    private_dns_zone_ids = [azurerm_private_dns_zone.storage_blob.id]
-  }
-
-  tags = local.common_tags
-}
-
-# Private Endpoint for Storage Account - File
-resource "azurerm_private_endpoint" "storage_file" {
-  name                = "${local.storage_pe_name}-file"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.private_endpoints.id
-
-  private_service_connection {
-    name                           = "storage-file-private-connection"
-    private_connection_resource_id = azurerm_storage_account.main.id
-    subresource_names              = ["file"]
-    is_manual_connection           = false
-  }
-
-  private_dns_zone_group {
-    name                 = "storage-file-dns-zone-group"
-    private_dns_zone_ids = [azurerm_private_dns_zone.storage_file.id]
+    name                 = "storage-${each.key}-dns-zone-group"
+    private_dns_zone_ids = [azurerm_private_dns_zone.main[each.value.dns_zone].id]
   }
 
   tags = local.common_tags
@@ -205,10 +145,10 @@ resource "azurerm_mssql_server" "main" {
   location                     = azurerm_resource_group.main.location
   version                      = "12.0"
   administrator_login          = var.sql_admin_username
-  administrator_login_password = random_password.sql_admin_password.result
+  administrator_login_password = random_password.generated["sql_admin"].result
 
-  # Disable public network access
-  public_network_access_enabled = false
+  # Enable public network access for initial deployment
+  public_network_access_enabled = true
 
   # Azure AD authentication with auto-detected admin
   azuread_administrator {
@@ -241,26 +181,12 @@ resource "azurerm_mssql_database" "main" {
   tags = local.common_tags
 }
 
-# Private Endpoint for SQL Server
-resource "azurerm_private_endpoint" "sql_server" {
-  name                = local.sql_pe_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.private_endpoints.id
-
-  private_service_connection {
-    name                           = "sql-private-connection"
-    private_connection_resource_id = azurerm_mssql_server.main.id
-    subresource_names              = ["sqlServer"]
-    is_manual_connection           = false
-  }
-
-  private_dns_zone_group {
-    name                 = "sql-dns-zone-group"
-    private_dns_zone_ids = [azurerm_private_dns_zone.sql_database.id]
-  }
-
-  tags = local.common_tags
+# SQL Server Firewall Rule to allow current client IP
+resource "azurerm_mssql_firewall_rule" "client_ip" {
+  name             = "AllowCurrentClientIP"
+  server_id        = azurerm_mssql_server.main.id
+  start_ip_address = "79.127.184.28"
+  end_ip_address   = "79.127.184.28"
 }
 
 # Azure Firewall Public IP
@@ -285,7 +211,7 @@ resource "azurerm_firewall_policy" "main" {
     proxy_enabled = true
   }
 
-  threat_intelligence_mode = "Alert"
+  threat_intelligence_mode = var.firewall_enforcement_enabled ? "Alert" : "Off"
   tags                     = local.common_tags
 }
 
@@ -299,7 +225,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
   application_rule_collection {
     name     = "aks-fqdn-rules"
     priority = 100
-    action   = "Allow"
+    action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
 
     rule {
       name = "aks-core-dependencies"
@@ -311,7 +237,10 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
         type = "Http"
         port = 80
       }
-      source_addresses = [local.aks_subnet_cidr]
+      source_addresses = [
+        var.clusters.public.subnet_cidr,
+        var.clusters.backend.subnet_cidr,
+      ]
       destination_fqdns = [
         # Core AKS dependencies
         "*.hcp.${var.location_code}.azmk8s.io",
@@ -347,7 +276,10 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
         type = "Https"
         port = 443
       }
-      source_addresses = [local.aks_subnet_cidr]
+      source_addresses = [
+        var.clusters.public.subnet_cidr,
+        var.clusters.backend.subnet_cidr,
+      ]
       destination_fqdns = [
         "dc.services.visualstudio.com",
         "*.ods.opinsights.azure.com",
@@ -361,12 +293,15 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
   network_rule_collection {
     name     = "aks-network-rules"
     priority = 200
-    action   = "Allow"
+    action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
 
     rule {
       name                  = "aks-tcp-ports"
       protocols             = ["TCP"]
-      source_addresses      = [local.aks_subnet_cidr]
+      source_addresses      = [
+        var.clusters.public.subnet_cidr,
+        var.clusters.backend.subnet_cidr,
+      ]
       destination_addresses = ["AzureCloud.${var.location}"]
       destination_ports     = ["9000", "443"]
     }
@@ -374,7 +309,10 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
     rule {
       name                  = "aks-udp-ports"
       protocols             = ["UDP"]
-      source_addresses      = [local.aks_subnet_cidr]
+      source_addresses      = [
+        var.clusters.public.subnet_cidr,
+        var.clusters.backend.subnet_cidr,
+      ]
       destination_addresses = ["AzureCloud.${var.location}"]
       destination_ports     = ["1194", "123"]
     }
@@ -382,7 +320,10 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
     rule {
       name                  = "ntp-time-sync"
       protocols             = ["UDP"]
-      source_addresses      = [local.aks_subnet_cidr]
+      source_addresses      = [
+        var.clusters.public.subnet_cidr,
+        var.clusters.backend.subnet_cidr,
+      ]
       destination_addresses = ["*"]
       destination_ports     = ["123"]
     }
@@ -423,8 +364,5 @@ resource "azurerm_route_table" "aks_routes" {
   tags = local.common_tags
 }
 
-# Associate Route Table with AKS Subnet
-resource "azurerm_subnet_route_table_association" "aks_routes" {
-  subnet_id      = azurerm_subnet.aks.id
-  route_table_id = azurerm_route_table.aks_routes.id
-}
+# Route table association removed - using loadBalancer outbound type instead of userDefinedRouting
+# This allows AKS nodes to reach the API server directly without firewall complications

@@ -1,41 +1,40 @@
 # SSL Certificate Generation for Demo
 # In production, use a proper CA-signed certificate
 
-# Generate a private key
 resource "tls_private_key" "app_gateway" {
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
-# Generate a self-signed certificate
-resource "tls_self_signed_cert" "app_gateway" {
+resource "tls_self_signed_cert" "wildcard" {
   private_key_pem = tls_private_key.app_gateway.private_key_pem
 
   subject {
-    common_name  = "aks-demo.local"
+    common_name  = "*.yourdomain.com"  # Wildcard certificate
     organization = "AKS Demo"
   }
 
-  validity_period_hours = 8760 # 1 year
-
-  allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "server_auth",
+  validity_period_hours = 8760
+  allowed_uses         = ["key_encipherment", "digital_signature", "server_auth"]
+  
+  # Subject Alternative Names for multiple domains
+  dns_names = [
+    "*.yourdomain.com",
+    "yourdomain.com",
+    "app.yourdomain.com",
+    "api.yourdomain.com"
   ]
 }
 
-# Create PFX certificate for Application Gateway using auto-generated password
-resource "pkcs12_from_pem" "app_gateway" {
-  cert_pem        = tls_self_signed_cert.app_gateway.cert_pem
+resource "pkcs12_from_pem" "wildcard" {
+  cert_pem        = tls_self_signed_cert.wildcard.cert_pem
   private_key_pem = tls_private_key.app_gateway.private_key_pem
-  password        = random_password.ssl_cert_password.result
+  password        = random_password.generated["ssl_cert"].result
 }
 
-# Store certificate in Key Vault as a secret (workaround for PKCS#12 format issue)
 resource "azurerm_key_vault_secret" "ssl_certificate" {
-  name         = "ssl-certificate"
-  value        = base64encode(pkcs12_from_pem.app_gateway.result)
+  name         = "wildcard-ssl-certificate"
+  value        = base64encode(pkcs12_from_pem.wildcard.result)
   key_vault_id = azurerm_key_vault.main.id
   content_type = "application/x-pkcs12"
 }

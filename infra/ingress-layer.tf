@@ -33,20 +33,15 @@ resource "azurerm_application_gateway" "main" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
+  # Apply WAF policy
+  firewall_policy_id = azurerm_web_application_firewall_policy.main.id
+
   sku {
     name     = "WAF_v2"
     tier     = "WAF_v2"
   }
 
-  waf_configuration {
-    enabled                  = true
-    firewall_mode            = "Prevention"
-    rule_set_type            = "OWASP"
-    rule_set_version         = "3.2"
-    file_upload_limit_mb     = 100
-    request_body_check       = true
-    max_request_body_size_kb = 128
-  }
+  # WAF configuration removed - using WAF policy instead
 
   gateway_ip_configuration {
     name      = "appGatewayIpConfig"
@@ -68,20 +63,26 @@ resource "azurerm_application_gateway" "main" {
     public_ip_address_id = azurerm_public_ip.app_gateway.id
   }
 
-  # Backend pool pointing to NGINX Ingress internal IP
+  # Backend pools for both clusters (NGINX ingress internal IPs)
   backend_address_pool {
-    name         = "nginx-backend-pool"
-    ip_addresses = [local.nginx_internal_ip]
+    name         = "public-backend-pool"
+    ip_addresses = [local.cluster_configs["public"].nginx_internal_ip]
   }
 
+  backend_address_pool {
+    name         = "backend-backend-pool"
+    ip_addresses = [local.cluster_configs["backend"].nginx_internal_ip]
+  }
+
+  # HTTP settings for public cluster
   backend_http_settings {
-    name                  = "nginx-backend-http-settings"
+    name                  = "public-backend-settings"
     cookie_based_affinity = "Disabled"
     path                  = "/"
     port                  = 80
     protocol              = "Http"
     request_timeout       = 60
-    probe_name            = "nginx-health-probe"
+    probe_name            = "public-health-probe"
 
     connection_draining {
       enabled           = true
@@ -89,14 +90,15 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
+  # HTTP settings for backend cluster
   backend_http_settings {
-    name                  = "nginx-backend-https-settings"
+    name                  = "backend-backend-settings"
     cookie_based_affinity = "Disabled"
     path                  = "/"
-    port                  = 443
-    protocol              = "Https"
+    port                  = 80
+    protocol              = "Http"
     request_timeout       = 60
-    probe_name            = "nginx-health-probe-https"
+    probe_name            = "backend-health-probe"
 
     connection_draining {
       enabled           = true
@@ -104,12 +106,12 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
-  # Health probes for NGINX Ingress
+  # Health probes for both clusters
   probe {
-    name                = "nginx-health-probe"
+    name                = "public-health-probe"
     protocol            = "Http"
     path                = "/healthz"
-    host                = local.nginx_internal_ip
+    host                = local.cluster_configs["public"].nginx_internal_ip
     port                = 80
     interval            = 30
     timeout             = 20
@@ -121,11 +123,11 @@ resource "azurerm_application_gateway" "main" {
   }
 
   probe {
-    name                = "nginx-health-probe-https"
-    protocol            = "Https"
+    name                = "backend-health-probe"
+    protocol            = "Http"
     path                = "/healthz"
-    host                = local.nginx_internal_ip
-    port                = 443
+    host                = local.cluster_configs["backend"].nginx_internal_ip
+    port                = 80
     interval            = 30
     timeout             = 20
     unhealthy_threshold = 3
@@ -135,6 +137,7 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
+  # HTTP listeners
   http_listener {
     name                           = "appGwHttpListener"
     frontend_ip_configuration_name = "appGwPublicFrontendIp"
@@ -142,30 +145,42 @@ resource "azurerm_application_gateway" "main" {
     protocol                       = "Http"
   }
 
+  # HTTPS listeners with host-based routing
   http_listener {
-    name                           = "appGwHttpsListener"
+    name                           = "public-app-listener"
     frontend_ip_configuration_name = "appGwPublicFrontendIp"
     frontend_port_name             = "port_443"
     protocol                       = "Https"
-    ssl_certificate_name           = "app-gateway-ssl-cert"
+    ssl_certificate_name           = "wildcard-ssl-cert"
+    host_name                      = "app.yourdomain.com"
   }
 
-  # SSL Certificate from PKCS#12 data using auto-generated password
+  http_listener {
+    name                           = "backend-api-listener"
+    frontend_ip_configuration_name = "appGwPublicFrontendIp"
+    frontend_port_name             = "port_443"
+    protocol                       = "Https"
+    ssl_certificate_name           = "wildcard-ssl-cert"
+    host_name                      = "api.yourdomain.com"
+  }
+
+  # Wildcard SSL Certificate for both domains
   ssl_certificate {
-    name     = "app-gateway-ssl-cert"
-    data     = pkcs12_from_pem.app_gateway.result
-    password = random_password.ssl_cert_password.result
+    name     = "wildcard-ssl-cert"
+    data     = pkcs12_from_pem.wildcard.result
+    password = random_password.generated["ssl_cert"].result
   }
 
-  # Redirect HTTP to HTTPS
+  # Redirect HTTP to HTTPS (generic redirect)
   redirect_configuration {
     name                 = "http-to-https-redirect"
     redirect_type        = "Permanent"
-    target_listener_name = "appGwHttpsListener"
+    target_listener_name = "public-app-listener"  # Default to public app
     include_path         = true
     include_query_string = true
   }
 
+  # Routing rules
   request_routing_rule {
     name                        = "http-redirect-rule"
     rule_type                   = "Basic"
@@ -175,12 +190,21 @@ resource "azurerm_application_gateway" "main" {
   }
 
   request_routing_rule {
-    name                       = "https-routing-rule"
+    name                       = "public-app-routing"
     rule_type                  = "Basic"
-    http_listener_name         = "appGwHttpsListener"
-    backend_address_pool_name  = "nginx-backend-pool"
-    backend_http_settings_name = "nginx-backend-https-settings"
+    http_listener_name         = "public-app-listener"
+    backend_address_pool_name  = "public-backend-pool"
+    backend_http_settings_name = "public-backend-settings"
     priority                   = 200
+  }
+
+  request_routing_rule {
+    name                       = "backend-api-routing"
+    rule_type                  = "Basic"
+    http_listener_name         = "backend-api-listener"
+    backend_address_pool_name  = "backend-backend-pool"
+    backend_http_settings_name = "backend-backend-settings"
+    priority                   = 300
   }
 
   autoscale_configuration {

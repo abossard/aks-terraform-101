@@ -17,7 +17,7 @@ data "azuread_service_principal" "sql_app_identity" {
   object_id = azurerm_user_assigned_identity.sql_app_identity.principal_id
 }
 
-# Create SQL Server AAD account using the correct sqlsso pattern
+# Create SQL Server AAD account for the managed identity
 resource "sqlsso_mssql_server_aad_account" "sql_app_identity" {
   sql_server_dns = azurerm_mssql_server.main.fully_qualified_domain_name
   database       = azurerm_mssql_database.main.name
@@ -35,14 +35,16 @@ resource "sqlsso_mssql_server_aad_account" "current_user_owner" {
   role           = "owner"
 }
 
-# Create a federated identity credential for the application identity to use with workload identity
+# Create federated identity credentials for each cluster
 resource "azurerm_federated_identity_credential" "sql_app_identity" {
-  name                = "fc-sql-app-${var.environment}-${var.project}"
+  for_each = var.clusters
+  
+  name                = "fc-sql-app-${each.key}-${var.environment}-${var.project}"
   resource_group_name = azurerm_resource_group.main.name
   audience            = ["api://AzureADTokenExchange"]
-  issuer              = azurerm_kubernetes_cluster.main.oidc_issuer_url
+  issuer              = azurerm_kubernetes_cluster.main[each.key].oidc_issuer_url
   parent_id           = azurerm_user_assigned_identity.sql_app_identity.id
-  subject             = "system:serviceaccount:${var.app_namespace}:sql-identity-sa"
+  subject             = "system:serviceaccount:${var.app_namespace}:sql-identity-sa-${each.key}"
 }
 
 # Store the application identity information in Key Vault

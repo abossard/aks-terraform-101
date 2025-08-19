@@ -36,12 +36,14 @@ resource "azurerm_virtual_network" "main" {
   tags                = local.common_tags
 }
 
-# AKS Subnet
-resource "azurerm_subnet" "aks" {
-  name                 = local.aks_subnet_name
+# AKS Cluster Subnets
+resource "azurerm_subnet" "clusters" {
+  for_each = var.clusters
+  
+  name                 = local.cluster_configs[each.key].subnet_name
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = [local.aks_subnet_cidr]
+  address_prefixes     = [each.value.subnet_cidr]
 
   # Enable private endpoint policies  
   private_endpoint_network_policies = "Enabled"
@@ -80,9 +82,11 @@ resource "azurerm_subnet" "private_endpoints" {
   private_endpoint_network_policies = "Disabled"
 }
 
-# Network Security Group for AKS Subnet
-resource "azurerm_network_security_group" "aks" {
-  name                = local.aks_nsg_name
+# Network Security Groups for AKS Clusters
+resource "azurerm_network_security_group" "clusters" {
+  for_each = var.clusters
+  
+  name                = local.cluster_configs[each.key].nsg_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.common_tags
@@ -97,46 +101,37 @@ resource "azurerm_network_security_group" "aks" {
     source_port_range          = "*"
     destination_port_ranges    = ["80", "443"]
     source_address_prefix      = local.app_gateway_subnet_cidr
-    destination_address_prefix = local.aks_subnet_cidr
+    destination_address_prefix = each.value.subnet_cidr
   }
 
-  # Allow inbound from within subnet
-  security_rule {
-    name                       = "AllowVnetInbound"
-    priority                   = 1100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "VirtualNetwork"
-    destination_address_prefix = "VirtualNetwork"
+  dynamic "security_rule" {
+    for_each = { for k, v in local.common_nsg_rules : k => v if v.direction == "Inbound" && k == "allow_vnet_inbound" }
+    content {
+      name                       = "AllowVnetInbound"
+      priority                   = security_rule.value.priority
+      direction                  = security_rule.value.direction
+      access                     = security_rule.value.access
+      protocol                   = security_rule.value.protocol
+      source_port_range          = security_rule.value.source_port_range
+      destination_port_range     = security_rule.value.destination_port_range
+      source_address_prefix      = security_rule.value.source_address_prefix
+      destination_address_prefix = security_rule.value.destination_address_prefix
+    }
   }
 
-  # Allow outbound to internet (will be routed through firewall)
-  security_rule {
-    name                       = "AllowInternetOutbound"
-    priority                   = 1000
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "Internet"
-  }
-
-  # Allow outbound to VNet
-  security_rule {
-    name                       = "AllowVnetOutbound"
-    priority                   = 1100
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "VirtualNetwork"
-    destination_address_prefix = "VirtualNetwork"
+  dynamic "security_rule" {
+    for_each = { for k, v in local.common_nsg_rules : k => v if v.direction == "Outbound" }
+    content {
+      name                       = security_rule.key == "allow_internet_outbound" ? "AllowInternetOutbound" : "AllowVnetOutbound"
+      priority                   = security_rule.value.priority
+      direction                  = security_rule.value.direction
+      access                     = security_rule.value.access
+      protocol                   = security_rule.value.protocol
+      source_port_range          = security_rule.value.source_port_range
+      destination_port_range     = security_rule.value.destination_port_range
+      source_address_prefix      = security_rule.value.source_address_prefix
+      destination_address_prefix = security_rule.value.destination_address_prefix
+    }
   }
 }
 
@@ -183,20 +178,22 @@ resource "azurerm_network_security_group" "app_gateway" {
     source_port_range          = "*"
     destination_port_ranges    = ["80", "443"]
     source_address_prefix      = "*"
-    destination_address_prefix = local.aks_subnet_cidr
+    destination_address_prefix = "10.240.0.0/16"  # VNet address space
   }
 
-  # Allow outbound to internet
-  security_rule {
-    name                       = "AllowInternetOutbound"
-    priority                   = 1100
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "Internet"
+  dynamic "security_rule" {
+    for_each = { for k, v in local.common_nsg_rules : k => v if v.direction == "Outbound" && k == "allow_internet_outbound" }
+    content {
+      name                       = "AllowInternetOutbound"
+      priority                   = 1100
+      direction                  = security_rule.value.direction
+      access                     = security_rule.value.access
+      protocol                   = security_rule.value.protocol
+      source_port_range          = security_rule.value.source_port_range
+      destination_port_range     = security_rule.value.destination_port_range
+      source_address_prefix      = security_rule.value.source_address_prefix
+      destination_address_prefix = security_rule.value.destination_address_prefix
+    }
   }
 }
 
@@ -234,10 +231,12 @@ resource "azurerm_network_security_group" "private_endpoints" {
   }
 }
 
-# Associate NSGs with Subnets
-resource "azurerm_subnet_network_security_group_association" "aks" {
-  subnet_id                 = azurerm_subnet.aks.id
-  network_security_group_id = azurerm_network_security_group.aks.id
+# Associate NSGs with Cluster Subnets
+resource "azurerm_subnet_network_security_group_association" "clusters" {
+  for_each = var.clusters
+  
+  subnet_id                 = azurerm_subnet.clusters[each.key].id
+  network_security_group_id = azurerm_network_security_group.clusters[each.key].id
 }
 
 resource "azurerm_subnet_network_security_group_association" "app_gateway" {
