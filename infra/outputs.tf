@@ -340,6 +340,13 @@ output "app_service_account_manifest_files" {
   }
 }
 
+output "app_kv_private_fqdns" {
+  description = "Per-app Key Vault Private Endpoint FQDNs (in the privatelink zone)"
+  value = {
+    for a, kv_name in local.app_kv_name_map : a => "${kv_name}.${local.private_dns_zones["key_vault"]}"
+  }
+}
+
 # Useful URLs and Endpoints
 output "application_url" {
   description = "URL to access the application via Application Gateway"
