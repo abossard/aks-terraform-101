@@ -55,6 +55,13 @@ resource "azurerm_role_assignment" "current_user_key_vault_admin" {
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
+# Wait 60 seconds for RBAC propagation before secret operations
+resource "time_sleep" "kv_rbac_propagation" {
+  depends_on = [azurerm_role_assignment.current_user_key_vault_admin]
+
+  create_duration = "60s"
+}
+
 # Private Endpoint for Key Vault
 resource "azurerm_private_endpoint" "key_vault" {
   name                = local.key_vault_pe_name

@@ -365,6 +365,7 @@ resource "azurerm_key_vault_secret" "database_connection" {
   name         = "database-connection-string-${each.value.name_suffix}"
   value        = "Server=${azurerm_mssql_server.main.fully_qualified_domain_name};Database=${azurerm_mssql_database.main.name};Authentication=Active Directory Managed Identity;User Id=${azurerm_user_assigned_identity.workload_identity[each.key].client_id};"
   key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [time_sleep.kv_rbac_propagation]
 }
 
 resource "azurerm_key_vault_secret" "storage_connection" {
@@ -373,4 +374,5 @@ resource "azurerm_key_vault_secret" "storage_connection" {
   name         = "storage-account-key-${each.value.name_suffix}"
   value        = azurerm_storage_account.main.primary_access_key
   key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [time_sleep.kv_rbac_propagation]
 }

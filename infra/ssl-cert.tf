@@ -37,4 +37,5 @@ resource "azurerm_key_vault_secret" "ssl_certificate" {
   value        = base64encode(pkcs12_from_pem.wildcard.result)
   key_vault_id = azurerm_key_vault.main.id
   content_type = "application/x-pkcs12"
+  depends_on   = [time_sleep.kv_rbac_propagation]
 }

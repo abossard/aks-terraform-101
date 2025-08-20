@@ -4,7 +4,7 @@
 
 # Core Configuration
 environment   = "prod"
-project       = "aks101"
+project       = "aks102"
 location      = "East US 2"
 location_code = "eus2"
 

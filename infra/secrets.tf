@@ -35,6 +35,7 @@ resource "azurerm_key_vault_secret" "passwords" {
   value        = random_password.generated[each.key].result
   key_vault_id = azurerm_key_vault.main.id
   content_type = "text/plain"
+  depends_on   = [time_sleep.kv_rbac_propagation]
 }
 
 # Sensitive outputs for retrieval if needed
