@@ -82,6 +82,29 @@ resource "azurerm_subnet" "private_endpoints" {
   private_endpoint_network_policies = "Disabled"
 }
 
+# API Server subnets per cluster (ASVNI)
+resource "azurerm_subnet" "apiserver" {
+  for_each = var.enable_api_server_vnet_integration ? var.clusters : {}
+
+  name                 = local.cluster_configs[each.key].apiserver_subnet_name
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = [local.cluster_configs[each.key].apiserver_cidr]
+
+  # Delegate to AKS managedClusters (BYO VNet requirement for ASVNI)
+  delegation {
+    name = "aks-managedclusters"
+    service_delegation {
+      name = "Microsoft.ContainerService/managedClusters"
+      # actions = [
+      #   "Microsoft.Network/virtualNetworks/subnets/join/action",
+      #   "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action",
+      #   "Microsoft.Network/virtualNetworks/subnets/unprepareNetworkPolicies/action"
+      # ]
+    }
+  }
+}
+
 # Network Security Groups for AKS Clusters
 resource "azurerm_network_security_group" "clusters" {
   for_each = var.clusters

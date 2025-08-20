@@ -26,8 +26,14 @@ locals {
       aks_name = "aks-${var.environment}-${var.project}-${v.name_suffix}-${var.location_code}-001"
 
       # Networking
-      subnet_name = "snet-${v.name_suffix}-${var.environment}-${var.location_code}-001"
-      nsg_name    = "nsg-${v.name_suffix}-${var.environment}-${var.location_code}-001"
+      subnet_name           = "snet-${v.name_suffix}-${var.environment}-${var.location_code}-001"
+      nsg_name              = "nsg-${v.name_suffix}-${var.environment}-${var.location_code}-001"
+      apiserver_subnet_name = "snet-apiserver-${v.name_suffix}-${var.environment}-${var.location_code}-001"
+      apiserver_nsg_name    = "nsg-apiserver-${v.name_suffix}-${var.environment}-${var.location_code}-001"
+
+      # Deterministic cluster index and per-cluster apiserver CIDR (/27s within parent /24)
+      cluster_index  = index(local.cluster_keys_sorted, k)
+      apiserver_cidr = cidrsubnet(local.apiserver_parent_cidr, 3, index(local.cluster_keys_sorted, k))
 
       # Reserved internal IPs for NGINX ingress
       nginx_internal_ip = cidrhost(v.subnet_cidr, 100)
@@ -72,6 +78,12 @@ locals {
   app_gateway_subnet_cidr = cidrsubnet(var.vnet_address_space, 8, 1) # 10.240.1.0/24
   firewall_subnet_cidr    = cidrsubnet(var.vnet_address_space, 8, 2) # 10.240.2.0/24
   pe_subnet_cidr          = cidrsubnet(var.vnet_address_space, 8, 3) # 10.240.3.0/24
+
+  # Automatic API server subnet allocation
+  # Reserve a /24 for API server subnets (non-overlapping with above). With 10.240.0.0/16 => 10.240.8.0/24
+  apiserver_parent_cidr = cidrsubnet(var.vnet_address_space, 8, 8)
+  # Deterministic ordering for per-cluster /27 allocations
+  cluster_keys_sorted = sort(keys(var.clusters))
 
   # Private DNS zones (fixed names)
   private_dns_zones = {

@@ -7,6 +7,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.6.0"
+    }
     time = {
       source  = "hashicorp/time"
       version = "~> 0.10"
@@ -64,3 +68,6 @@ data "azurerm_client_config" "current" {}
 data "http" "myip" {
   url = "https://api.ipify.org?format=text"
 }
+
+# AzAPI provider for ARM-level updates (e.g., enabling ASVNI on AKS)
+provider "azapi" {}

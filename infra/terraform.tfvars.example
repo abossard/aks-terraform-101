@@ -42,6 +42,10 @@ enable_container_registry = true
 enable_secret_rotation    = true
 secret_rotation_interval  = "2m"
 
+# API Server VNet Integration (ASVNI)
+enable_api_server_vnet_integration = false
+# When enabled, API server subnets are computed automatically per cluster (/27 within a reserved /24).
+
 # Firewall Configuration
 firewall_enforcement_enabled = false  # true for enforcement, false for audit-only (default)
 

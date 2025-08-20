@@ -97,8 +97,8 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   oms_agent {
-  log_analytics_workspace_id      = azurerm_log_analytics_workspace.main.id
-  msi_auth_for_monitoring_enabled = true
+    log_analytics_workspace_id      = azurerm_log_analytics_workspace.main.id
+    msi_auth_for_monitoring_enabled = true
   }
 
   # Maintenance window
@@ -357,6 +357,22 @@ resource "local_file" "cluster_setup" {
 
   content  = each.value
   filename = "${path.module}/k8s/generated/${each.key}-cluster-setup.sh"
+}
+
+# Enable API Server VNet Integration (ASVNI) using AzAPI per cluster when toggled
+resource "azapi_update_resource" "aks_enable_asvni" {
+  for_each    = var.enable_api_server_vnet_integration ? var.clusters : {}
+  type        = "Microsoft.ContainerService/managedClusters@2024-05-01"
+  resource_id = azurerm_kubernetes_cluster.main[each.key].id
+
+  body = jsonencode({
+    properties = {
+      apiServerAccessProfile = {
+        enableVnetIntegration = true
+        subnetId              = azurerm_subnet.apiserver[each.key].id
+      }
+    }
+  })
 }
 
 # Sample secrets in Key Vault with auto-generated connection strings for each cluster

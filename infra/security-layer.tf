@@ -295,28 +295,28 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
     priority = 200
     action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
 
-      rule {
-        name      = "aks-tcp-ports"
-        protocols = ["TCP"]
-        source_addresses = [
-          var.clusters.public.subnet_cidr,
-          var.clusters.backend.subnet_cidr,
-        ]
-        destination_addresses = ["AzureCloud.${var.location}"]
-        destination_ports     = ["9000", "443"]
-      }
+    rule {
+      name      = "aks-tcp-ports"
+      protocols = ["TCP"]
+      source_addresses = [
+        var.clusters.public.subnet_cidr,
+        var.clusters.backend.subnet_cidr,
+      ]
+      destination_addresses = ["AzureCloud.${var.location}"]
+      destination_ports     = ["9000", "443"]
+    }
 
-      # Allow Azure DNS VIP if traffic traverses firewall under UDR
-      rule {
-        name                   = "dns-azure-vip"
-        protocols              = ["UDP", "TCP"]
-        source_addresses       = [
-          var.clusters.public.subnet_cidr,
-          var.clusters.backend.subnet_cidr,
-        ]
-        destination_addresses  = ["168.63.129.16"]
-        destination_ports      = ["53"]
-      }
+    # Allow Azure DNS VIP if traffic traverses firewall under UDR
+    rule {
+      name      = "dns-azure-vip"
+      protocols = ["UDP", "TCP"]
+      source_addresses = [
+        var.clusters.public.subnet_cidr,
+        var.clusters.backend.subnet_cidr,
+      ]
+      destination_addresses = ["168.63.129.16"]
+      destination_ports     = ["53"]
+    }
 
     rule {
       name      = "aks-udp-ports"

@@ -35,6 +35,12 @@ output "app_gateway_subnet_id" {
   value       = azurerm_subnet.app_gateway.id
 }
 
+# API Server Subnets (if enabled)
+output "apiserver_subnet_ids" {
+  description = "IDs of the per-cluster API server subnets (ASVNI)"
+  value       = var.enable_api_server_vnet_integration ? { for k, v in azurerm_subnet.apiserver : k => v.id } : {}
+}
+
 # AKS Clusters
 output "aks_clusters" {
   description = "AKS cluster information"

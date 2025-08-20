@@ -152,6 +152,17 @@ variable "app_service_account" {
 # SSL certificate password is now auto-generated - no variable needed
 
 # Feature Flags
+variable "enable_api_server_vnet_integration" {
+  description = "Enable API Server VNet Integration (ASVNI) and create a dedicated API server subnet per cluster."
+  type        = bool
+  default     = true
+  validation {
+    condition     = can(var.enable_api_server_vnet_integration)
+    error_message = "enable_api_server_vnet_integration must be true or false."
+  }
+}
+
+
 variable "enable_container_registry" {
   description = "Enable Azure Container Registry"
   type        = bool

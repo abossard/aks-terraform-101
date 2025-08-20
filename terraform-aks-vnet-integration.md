@@ -124,6 +124,11 @@ Notes
 - If you use strict NSGs, add the ports listed above.
 - Converting an existing cluster requires an immediate restart and can change the API server IP.
 
+Repository wiring
+- Toggle ASVNI with variable: enable_api_server_vnet_integration (default: false).
+- base-infrastructure.tf computes per-cluster API server CIDRs automatically (/27 within a reserved /24), creates/delegates these subnets, and attaches an NSG with recommended rules.
+- outputs.tf exposes apiserver_subnet_ids for use in the AKS layer when enabling ASVNI via AzAPI.
+
 
 ## Quick validation
 

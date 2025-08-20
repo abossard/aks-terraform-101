@@ -61,7 +61,7 @@ resource "azurerm_monitor_data_collection_rule_association" "prometheus" {
 resource "azurerm_monitor_data_collection_rule_association" "prometheus_configuration_access" {
   for_each = var.clusters
 
-  name                    = "configurationAccessEndpoint"
-  target_resource_id      = azurerm_kubernetes_cluster.main[each.key].id
+  name                        = "configurationAccessEndpoint"
+  target_resource_id          = azurerm_kubernetes_cluster.main[each.key].id
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.prometheus.id
 }
