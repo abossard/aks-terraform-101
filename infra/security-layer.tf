@@ -362,5 +362,13 @@ resource "azurerm_route_table" "aks_routes" {
 
 }
 
+# Associate route table with all AKS cluster subnets (forces egress via firewall)
+resource "azurerm_subnet_route_table_association" "aks_clusters" {
+  for_each = azurerm_subnet.clusters
+
+  subnet_id      = azurerm_subnet.clusters[each.key].id
+  route_table_id = azurerm_route_table.aks_routes.id
+}
+
 # Route table association removed - using loadBalancer outbound type instead of userDefinedRouting
 # This allows AKS nodes to reach the API server directly without firewall complications
