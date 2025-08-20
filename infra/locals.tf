@@ -31,9 +31,9 @@ locals {
       apiserver_subnet_name = "snet-apiserver-${v.name_suffix}-${var.environment}-${var.location_code}-001"
       apiserver_nsg_name    = "nsg-apiserver-${v.name_suffix}-${var.environment}-${var.location_code}-001"
 
-      # Deterministic cluster index and per-cluster apiserver CIDR (/27s within parent /24)
+      # Deterministic cluster index and per-cluster apiserver CIDR (/28s within parent /24)
       cluster_index  = index(local.cluster_keys_sorted, k)
-      apiserver_cidr = cidrsubnet(local.apiserver_parent_cidr, 3, index(local.cluster_keys_sorted, k))
+      apiserver_cidr = cidrsubnet(local.apiserver_parent_cidr, 4, index(local.cluster_keys_sorted, k))
 
       # Reserved internal IPs for NGINX ingress
       nginx_internal_ip = cidrhost(v.subnet_cidr, 100)
@@ -80,8 +80,9 @@ locals {
   pe_subnet_cidr          = cidrsubnet(var.vnet_address_space, 8, 3) # 10.240.3.0/24
 
   # Automatic API server subnet allocation
-  # Reserve a /24 for API server subnets (non-overlapping with above). With 10.240.0.0/16 => 10.240.8.0/24
-  apiserver_parent_cidr = cidrsubnet(var.vnet_address_space, 8, 8)
+  # Reserve a /24 for API server subnets at a high index to avoid collisions with typical subnets.
+  # With 10.240.0.0/16 => 10.240.200.0/24
+  apiserver_parent_cidr = cidrsubnet(var.vnet_address_space, 8, 200)
   # Deterministic ordering for per-cluster /27 allocations
   cluster_keys_sorted = sort(keys(var.clusters))
 

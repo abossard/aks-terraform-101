@@ -1,6 +1,7 @@
 # Open Tasks
 - [ ] Enable VNET Integration from Terraform, each cluster in it's own VNET
 - [ ] Enable Private Kubernetes API Server, but configurable via Terraform variable (default public)
+- [ ] Status of the Konnectivyt Agent, what if it remains deployed?
 
 # Application specific setup (for each)
 - [ ] Create Key Vault for each application

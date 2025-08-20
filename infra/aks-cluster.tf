@@ -365,14 +365,14 @@ resource "azapi_update_resource" "aks_enable_asvni" {
   type        = "Microsoft.ContainerService/managedClusters@2024-05-01"
   resource_id = azurerm_kubernetes_cluster.main[each.key].id
 
-  body = jsonencode({
+  body = {
     properties = {
       apiServerAccessProfile = {
         enableVnetIntegration = true
         subnetId              = azurerm_subnet.apiserver[each.key].id
       }
     }
-  })
+  }
 }
 
 # Sample secrets in Key Vault with auto-generated connection strings for each cluster
