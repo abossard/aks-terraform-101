@@ -486,6 +486,7 @@ $RECYCLE.BIN/
 *.tfstate
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
+*.tfstate*
  
 # Generated Kubernetes manifests (rendered by Terraform)
 infra/k8s/generated/
