@@ -5,14 +5,15 @@
 
 # Application specific setup (for each)
 - [✅] Should every cluster have it's own private link subnet? No
-- [ ] What is in the application config? 
+- [✅] What is in the application config? 
       - name
 - [ ] What is create per application
-    - [ ] Create Key Vault for each application
+    - [✅] Create Key Vault for each application
     - [ ] Create SQL Database for each application with Private Endpoint
-    - [ ] Create Workload Identity and Management Identity
-    - [ ] Create RBAC for the Managed Identity
-    - [ ] Kubernetes Namespace and Servie Account
+    - [wip] Create Workload Identity and Management Identity
+    - [✅] Create RBAC for the Managed Identity
+    - [wip] all with private links/endpoints
+    - [wip] Kubernetes Namespace and Service Account
     - [ ] Output Private Links IP / Generate Network Policy Yaml / Example deployment yaml
 
 

@@ -354,11 +354,11 @@ locals {
     for k, v in var.clusters : k => templatefile(
       "${path.module}/scripts/cluster-setup.tmpl.sh",
       {
-        cluster_name   = local.cluster_configs[k].aks_name,
-        resource_group = azurerm_resource_group.main.name,
-  nginx_manifest = "${path.module}/k8s/generated/${k}-nginx-internal-controller.yaml",
-  enable_asvni   = tostring(var.enable_api_server_vnet_integration),
-  apiserver_subnet_id = var.enable_api_server_vnet_integration ? azurerm_subnet.apiserver[k].id : ""
+        cluster_name        = local.cluster_configs[k].aks_name,
+        resource_group      = azurerm_resource_group.main.name,
+        nginx_manifest      = "${path.module}/k8s/generated/${k}-nginx-internal-controller.yaml",
+        enable_asvni        = tostring(var.enable_api_server_vnet_integration),
+        apiserver_subnet_id = var.enable_api_server_vnet_integration ? azurerm_subnet.apiserver[k].id : ""
       }
     )
   }
@@ -380,7 +380,7 @@ resource "azapi_update_resource" "aks_enable_asvni" {
   body = {
     properties = {
       apiServerAccessProfile = {
-  enablePrivateCluster = var.enable_private_cluster
+        enablePrivateCluster  = var.enable_private_cluster
         enableVnetIntegration = true
         subnetId              = azurerm_subnet.apiserver[each.key].id
       }

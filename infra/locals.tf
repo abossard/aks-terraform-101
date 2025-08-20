@@ -41,8 +41,8 @@ locals {
       # Workload identity
       workload_identity_name = "id-workload-${v.name_suffix}-${var.environment}-${var.location_code}-001"
 
-  # AKS control plane identity (user-assigned) for custom resource operations
-  aks_control_plane_identity_name = "id-aksctrl-${v.name_suffix}-${var.environment}-${var.location_code}-001"
+      # AKS control plane identity (user-assigned) for custom resource operations
+      aks_control_plane_identity_name = "id-aksctrl-${v.name_suffix}-${var.environment}-${var.location_code}-001"
     })
   }
 
@@ -188,4 +188,28 @@ locals {
     var.sql_azuread_admin_object_id,
     data.azurerm_client_config.current.object_id
   )
+
+  # Applications: sanitize and derive per-app naming helpers
+  applications_normalized = [for a in var.applications : lower(trimspace(a))]
+
+  # Valid storage account chars (lowercase alphanumeric only). We'll sanitize per usage
+  app_map = {
+    for a in local.applications_normalized : a => {
+      # Short code for names where brevity matters
+      short = replace(replace(replace(a, "-", ""), "_", ""), " ", "")
+      # CAF-ish base name fragment
+      base = "${a}-${var.environment}-${var.location_code}"
+      # Common tags with App
+      tags = merge(local.common_tags, { App = a })
+    }
+  }
+
+  # Helper to build a storage-account-safe name per app (must be 3-24, lowercase, alnum only)
+  # Final composition will be st + project + env + app short + loc + suffix
+  storage_name_parts = {
+    for a, v in local.app_map : a => {
+      # components are already sanitized: project/env/location_code are alphanumeric; v.short is alphanumeric
+      prefix = lower("st${var.project}${var.environment}${v.short}${var.location_code}")
+    }
+  }
 }

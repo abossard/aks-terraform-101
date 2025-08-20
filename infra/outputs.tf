@@ -309,6 +309,37 @@ output "service_account_manifest_files" {
   }
 }
 
+# Per-app: namespaces and SAs
+output "app_namespaces" {
+  description = "Per-app Kubernetes namespaces"
+  value       = { for a, v in local.app_k8s : a => v.namespace }
+}
+
+output "app_service_accounts" {
+  description = "Per-app Kubernetes service account names"
+  value       = { for a, v in local.app_k8s : a => v.service_account }
+}
+
+output "app_uami_client_ids" {
+  description = "Per-app user-assigned managed identity client IDs"
+  value       = { for a, v in local.app_identities : a => v.client_id }
+}
+
+output "app_federated_identity_ids" {
+  description = "Per-app per-cluster federated identity credential IDs"
+  value = {
+    for k, v in azurerm_federated_identity_credential.app : k => v.id
+  }
+}
+
+# Rendered per-app ServiceAccount YAMLs (per cluster/app)
+output "app_service_account_manifest_files" {
+  description = "Paths to the generated per-app ServiceAccount YAML files for each cluster/app combination"
+  value = {
+    for k, v in local_file.app_service_accounts : k => v.filename
+  }
+}
+
 # Useful URLs and Endpoints
 output "application_url" {
   description = "URL to access the application via Application Gateway"

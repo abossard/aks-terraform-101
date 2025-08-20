@@ -223,3 +223,14 @@ variable "tags" {
     Environment = "production"
   }
 }
+
+# Application list
+variable "applications" {
+  description = "List of application names for which per-app resources will be created (e.g., identities). Names should be lowercase, alphanumeric or hyphens."
+  type        = list(string)
+  default     = ["app1", "app2"]
+  validation {
+    condition     = length(var.applications) > 0
+    error_message = "Provide at least one application name in var.applications."
+  }
+}
