@@ -8,13 +8,19 @@ resource "azurerm_resource_group" "main" {
   name     = local.resource_group_name
   location = var.location
   tags     = local.common_tags
-
   lifecycle {
     precondition {
       condition     = length(local.resource_group_name) <= 90
       error_message = "Resource group name exceeds 90 character limit."
     }
   }
+}
+
+# Shared SQL Resource Group (single RG for all SQL assets)
+resource "azurerm_resource_group" "sql_shared" {
+  name     = local.sql_shared_resource_group_name
+  location = var.location
+  tags     = local.common_tags
 }
 
 # Log Analytics Workspace (needed early for monitoring)

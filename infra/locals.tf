@@ -6,6 +6,9 @@ locals {
   # Resource naming (following CAF conventions)
   resource_group_name = "rg-${local.base_name}-001"
 
+  # Dedicated shared SQL resource group name (single RG for all SQL assets)
+  sql_shared_resource_group_name = "rg-${var.environment}-${var.project}-sql-${var.location_code}-001"
+
   # Networking
   vnet_name                     = "vnet-${local.base_name}-001"
   app_gateway_subnet_name       = "snet-agw-${var.environment}-${var.location_code}-001"
@@ -212,6 +215,11 @@ locals {
       base        = "${x.app}-${var.environment}-${var.location_code}"
       tags        = merge(local.common_tags, { App = x.app, Cluster = x.cluster_key })
     }
+  }
+
+  # Per-app resource group names (for non-SQL app resources)
+  app_resource_group_names = {
+    for a, v in local.app_map : a => "rg-${var.environment}-${var.project}-${a}-${var.location_code}-001"
   }
 
   # Helper to build a storage-account-safe name per app (must be 3-24, lowercase, alnum only)

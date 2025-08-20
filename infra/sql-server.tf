@@ -2,8 +2,8 @@
 # SQL Server
 resource "azurerm_mssql_server" "main" {
   name                         = local.sql_server_name
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = azurerm_resource_group.main.location
+  resource_group_name          = azurerm_resource_group.sql_shared.name
+  location                     = azurerm_resource_group.sql_shared.location
   version                      = "12.0"
   administrator_login          = var.sql_admin_username
   administrator_login_password = random_password.generated["sql_admin"].result

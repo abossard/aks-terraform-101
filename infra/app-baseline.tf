@@ -8,11 +8,20 @@ locals {
   }
 }
 
+# Per-app resource groups
+resource "azurerm_resource_group" "app" {
+  for_each = local.app_map
+
+  name     = local.app_resource_group_names[each.key]
+  location = azurerm_resource_group.main.location
+  tags     = each.value.tags
+}
+
 resource "azurerm_user_assigned_identity" "app" {
   for_each            = local.app_map
   location            = azurerm_resource_group.main.location
   name                = local.app_identity_name_map[each.key]
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.app[each.key].name
   tags                = each.value.tags
 }
 
@@ -56,7 +65,7 @@ resource "azurerm_key_vault" "app" {
 
   name                          = local.app_kv_name_map[each.key]
   location                      = azurerm_resource_group.main.location
-  resource_group_name           = azurerm_resource_group.main.name
+  resource_group_name           = azurerm_resource_group.app[each.key].name
   tenant_id                     = data.azurerm_client_config.current.tenant_id
   sku_name                      = "standard"
   enable_rbac_authorization     = true
@@ -84,7 +93,7 @@ resource "azurerm_private_endpoint" "app_kv" {
 
   name                = "pe-kv-${each.key}-${var.environment}-${var.location_code}-001"
   location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.app[each.key].name
   subnet_id           = azurerm_subnet.private_endpoints.id
 
   private_service_connection {
@@ -148,6 +157,30 @@ resource "local_file" "app_service_accounts" {
 }
 
 ########################################
+# Per-App Demo Echo Deployment (YAML rendering)
+########################################
+
+// Render a simple echo server deployment + service + ingress per app
+locals {
+  app_echo_templates = {
+    for a, v in local.app_map : a => templatefile(
+      "${path.module}/k8s/echo-app.tmpl.yaml",
+      {
+        namespace          = local.app_k8s[a].namespace,
+        app_name           = a,
+        ingress_class_name = "nginx-internal"
+      }
+    )
+  }
+}
+
+resource "local_file" "app_echo_manifests" {
+  for_each = local.app_echo_templates
+  content  = each.value
+  filename = "${path.module}/k8s/generated/${local.app_map[each.key].cluster_key}-${each.key}-echo.yaml"
+}
+
+########################################
 # Federated Identity per app per cluster (AKS OIDC issuer)
 ########################################
 
@@ -155,7 +188,7 @@ resource "azurerm_federated_identity_credential" "app" {
   for_each = local.app_map
 
   name                = "fc-${each.key}-${var.environment}-${var.project}-${each.value.cluster_key}"
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.app[each.key].name
   audience            = ["api://AzureADTokenExchange"]
   issuer              = azurerm_kubernetes_cluster.main[each.value.cluster_key].oidc_issuer_url
   parent_id           = azurerm_user_assigned_identity.app[each.key].id

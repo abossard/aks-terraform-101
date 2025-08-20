@@ -11,6 +11,17 @@ output "resource_group_location" {
   value       = azurerm_resource_group.main.location
 }
 
+# Shared SQL Resource Group
+output "sql_shared_resource_group_name" {
+  description = "Name of the shared SQL resource group"
+  value       = azurerm_resource_group.sql_shared.name
+}
+
+output "sql_shared_resource_group_id" {
+  description = "ID of the shared SQL resource group"
+  value       = azurerm_resource_group.sql_shared.id
+}
+
 # Networking
 output "virtual_network_name" {
   description = "Name of the virtual network"
@@ -315,6 +326,11 @@ output "app_namespaces" {
 output "app_service_accounts" {
   description = "Per-app Kubernetes service account names"
   value       = { for a, v in local.app_k8s : a => v.service_account }
+}
+
+output "app_resource_groups" {
+  description = "Per-app resource group names for non-SQL app resources"
+  value       = local.app_resource_group_names
 }
 
 output "app_uami_client_ids" {
