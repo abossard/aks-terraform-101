@@ -5,6 +5,20 @@ set -euo pipefail
 # Cluster: ${cluster_name}
 # Resource Group: ${resource_group}
 # NGINX Controller Manifest: ${nginx_manifest}
+# Enable ASVNI: ${enable_asvni}
+# API Server Subnet ID: ${apiserver_subnet_id}
+
+# Optionally enable API Server VNet Integration (ASVNI) via Azure CLI
+if [[ "${enable_asvni}" == "true" && -n "${apiserver_subnet_id}" ]]; then
+  echo "[INFO] Enabling API Server VNet Integration for cluster: ${cluster_name}"
+  az aks update \
+    --name "${cluster_name}" \
+    --resource-group "${resource_group}" \
+    --enable-apiserver-vnet-integration \
+    --apiserver-subnet-id "${apiserver_subnet_id}" || {
+      echo "[WARN] az aks update failed (possibly already enabled). Continuing." >&2
+    }
+fi
 
 echo "[INFO] Connecting to AKS cluster: ${cluster_name} (RG: ${resource_group})"
 az aks get-credentials --resource-group "${resource_group}" --name "${cluster_name}" --overwrite-existing 1>/dev/null

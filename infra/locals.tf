@@ -40,6 +40,9 @@ locals {
 
       # Workload identity
       workload_identity_name = "id-workload-${v.name_suffix}-${var.environment}-${var.location_code}-001"
+
+  # AKS control plane identity (user-assigned) for custom resource operations
+  aks_control_plane_identity_name = "id-aksctrl-${v.name_suffix}-${var.environment}-${var.location_code}-001"
     })
   }
 

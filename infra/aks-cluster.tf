@@ -10,6 +10,15 @@ resource "azurerm_user_assigned_identity" "workload_identity" {
   resource_group_name = azurerm_resource_group.main.name
 }
 
+# User-Assigned Managed Identity for AKS control plane (required for custom network operations like ASVNI)
+resource "azurerm_user_assigned_identity" "control_plane_identity" {
+  for_each = var.clusters
+
+  name                = local.cluster_configs[each.key].aks_control_plane_identity_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+}
+
 # Container Registry (optional)
 resource "azurerm_container_registry" "main" {
   count               = var.enable_container_registry ? 1 : 0
@@ -88,7 +97,8 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   identity {
-    type = "SystemAssigned"
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.control_plane_identity[each.key].id]
   }
 
   azure_active_directory_role_based_access_control {
@@ -162,7 +172,7 @@ resource "azurerm_role_assignment" "aks_identity_network_contributor_vnet" {
 
   scope                = azurerm_virtual_network.main.id
   role_definition_name = "Network Contributor"
-  principal_id         = azurerm_kubernetes_cluster.main[each.key].identity[0].principal_id
+  principal_id         = azurerm_user_assigned_identity.control_plane_identity[each.key].principal_id
 }
 
 # Some operations may use the kubelet identity; grant it as well for safety
@@ -346,7 +356,9 @@ locals {
       {
         cluster_name   = local.cluster_configs[k].aks_name,
         resource_group = azurerm_resource_group.main.name,
-        nginx_manifest = "${path.module}/k8s/generated/${k}-nginx-internal-controller.yaml"
+  nginx_manifest = "${path.module}/k8s/generated/${k}-nginx-internal-controller.yaml",
+  enable_asvni   = tostring(var.enable_api_server_vnet_integration),
+  apiserver_subnet_id = var.enable_api_server_vnet_integration ? azurerm_subnet.apiserver[k].id : ""
       }
     )
   }
@@ -373,6 +385,11 @@ resource "azapi_update_resource" "aks_enable_asvni" {
       }
     }
   }
+
+  # Ensure the control plane identity has VNet permissions before enabling ASVNI
+  depends_on = [
+    azurerm_role_assignment.aks_identity_network_contributor_vnet
+  ]
 }
 
 # Sample secrets in Key Vault with auto-generated connection strings for each cluster
