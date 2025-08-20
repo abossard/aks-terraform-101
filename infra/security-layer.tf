@@ -295,28 +295,28 @@ resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
     priority = 200
     action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
 
-    # Ensure AKS control-plane tunnel connectivity (TCP 9000)
-    rule {
-      name      = "aks-tunnel-9000"
-      protocols = ["TCP"]
-      source_addresses = [
-        var.clusters.public.subnet_cidr,
-        var.clusters.backend.subnet_cidr,
-      ]
-      destination_fqdns = ["*.tun.${var.location_code}.azmk8s.io"]
-      destination_ports = ["9000"]
-    }
+      rule {
+        name      = "aks-tcp-ports"
+        protocols = ["TCP"]
+        source_addresses = [
+          var.clusters.public.subnet_cidr,
+          var.clusters.backend.subnet_cidr,
+        ]
+        destination_addresses = ["AzureCloud.${var.location}"]
+        destination_ports     = ["9000", "443"]
+      }
 
-    rule {
-      name      = "aks-tcp-ports"
-      protocols = ["TCP"]
-      source_addresses = [
-        var.clusters.public.subnet_cidr,
-        var.clusters.backend.subnet_cidr,
-      ]
-      destination_addresses = ["AzureCloud.${var.location}"]
-      destination_ports     = ["9000", "443"]
-    }
+      # Allow Azure DNS VIP if traffic traverses firewall under UDR
+      rule {
+        name                   = "dns-azure-vip"
+        protocols              = ["UDP", "TCP"]
+        source_addresses       = [
+          var.clusters.public.subnet_cidr,
+          var.clusters.backend.subnet_cidr,
+        ]
+        destination_addresses  = ["168.63.129.16"]
+        destination_ports      = ["53"]
+      }
 
     rule {
       name      = "aks-udp-ports"
@@ -393,13 +393,6 @@ resource "azurerm_route_table" "aks_routes" {
   name                = local.firewall_route_table_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-
-  # Bypass Azure DNS (168.63.129.16) from the firewall so nodes can resolve using the platform resolver
-  route {
-    name           = "azure-dns-exception"
-    address_prefix = "168.63.129.16/32"
-    next_hop_type  = "Internet"
-  }
 
   route {
     name                   = "default-via-firewall"

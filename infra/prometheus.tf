@@ -56,3 +56,12 @@ resource "azurerm_monitor_data_collection_rule_association" "prometheus" {
   target_resource_id      = azurerm_kubernetes_cluster.main[each.key].id
   data_collection_rule_id = azurerm_monitor_data_collection_rule.prometheus.id
 }
+
+# Optional: Provide configuration access endpoint association when AMPLS or strict environments are used
+resource "azurerm_monitor_data_collection_rule_association" "prometheus_configuration_access" {
+  for_each = var.clusters
+
+  name                    = "configurationAccessEndpoint"
+  target_resource_id      = azurerm_kubernetes_cluster.main[each.key].id
+  data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.prometheus.id
+}
