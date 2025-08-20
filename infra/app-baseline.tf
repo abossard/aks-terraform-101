@@ -46,7 +46,7 @@ locals {
   app_kv_name_map = {
     for a, v in local.app_map : a => lower(
       substr(
-        "kv-${var.environment}${var.project}${v.short}${random_string.unique_suffix.result}",
+        "akv-${var.environment}${var.project}${v.short}${random_string.unique_suffix.result}",
         0,
         24
       )
