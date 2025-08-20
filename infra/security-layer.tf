@@ -347,6 +347,35 @@ resource "azurerm_firewall" "main" {
 
 }
 
+# Diagnostic settings: send Azure Firewall logs to Log Analytics (resource-specific tables)
+resource "azurerm_monitor_diagnostic_setting" "firewall_logs" {
+  name                       = "fw-logs-to-law"
+  target_resource_id         = azurerm_firewall.main.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+  # Use resource-specific tables for better performance/cost
+  log_analytics_destination_type = "Dedicated"
+
+  enabled_log {
+    category = "AZFWNetworkRule"
+  }
+  enabled_log {
+    category = "AZFWApplicationRule"
+  }
+  enabled_log {
+    category = "AZFWDnsQuery"
+  }
+  enabled_log {
+    category = "AZFWThreatIntel"
+  }
+
+  # Optional advanced categories (uncomment if needed and supported in your SKU/features)
+  # enabled_log { category = "AZFWFlowTrace" }
+  # enabled_log { category = "AZFWFatFlow" }
+  # enabled_log { category = "AZFWApplicationRuleAggregation" }
+  # enabled_log { category = "AZFWNetworkRuleAggregation" }
+  # enabled_log { category = "AZFWIdpsSignature" }
+}
+
 # Route Table for AKS Subnet (force traffic through firewall)
 resource "azurerm_route_table" "aks_routes" {
   name                = local.firewall_route_table_name
