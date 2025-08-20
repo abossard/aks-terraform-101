@@ -17,30 +17,10 @@ data "azuread_service_principal" "sql_app_identity" {
 }
 
 # Create SQL Server AAD account for the managed identity
-resource "sqlsso_mssql_server_aad_account" "sql_app_identity" {
-  sql_server_dns = azurerm_mssql_server.main.fully_qualified_domain_name
-  database       = azurerm_mssql_database.main.name
-  account_name   = azurerm_user_assigned_identity.sql_app_identity.name
-  object_id      = azurerm_user_assigned_identity.sql_app_identity.principal_id
-  role           = "owner"
-
-  depends_on = [
-    azurerm_mssql_firewall_rule.client_ip
-  ]
-}
+// Removed shared DB-level AAD account; per-app DB users are created in app-baseline.tf
 
 # Make the current Terraform user an owner of the SQL Server
-resource "sqlsso_mssql_server_aad_account" "current_user_owner" {
-  sql_server_dns = azurerm_mssql_server.main.fully_qualified_domain_name
-  database       = azurerm_mssql_database.main.name
-  account_name   = local.detected_sql_admin_login
-  object_id      = local.detected_sql_admin_object_id
-  role           = "owner"
-
-  depends_on = [
-    azurerm_mssql_firewall_rule.client_ip
-  ]
-}
+// Removed shared DB owner grant for current user; optional to recreate per-app DB if desired
 
 # Create federated identity credentials for each cluster
 resource "azurerm_federated_identity_credential" "sql_app_identity" {
@@ -63,9 +43,4 @@ resource "azurerm_key_vault_secret" "sql_app_identity_client_id" {
 }
 
 # Create an updated database connection string for the application identity
-resource "azurerm_key_vault_secret" "database_connection_app_identity" {
-  name         = "database-connection-app-identity"
-  value        = "Server=${azurerm_mssql_server.main.fully_qualified_domain_name};Database=${azurerm_mssql_database.main.name};Authentication=Active Directory Managed Identity;User Id=${azurerm_user_assigned_identity.sql_app_identity.client_id};"
-  key_vault_id = azurerm_key_vault.main.id
-  content_type = "text/plain"
-}
+// Removed connection-string secret (Managed Identity is secretless). Use outputs/config instead.

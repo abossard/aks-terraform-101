@@ -24,20 +24,4 @@ resource "azurerm_mssql_server" "main" {
   tags = local.common_tags
 }
 
-# SQL Database
-resource "azurerm_mssql_database" "main" {
-  name           = local.sql_database_name
-  server_id      = azurerm_mssql_server.main.id
-  collation      = "SQL_Latin1_General_CP1_CI_AS"
-  license_type   = "LicenseIncluded"
-  sku_name       = "S1"
-  zone_redundant = false
-
-  # Threat detection with auto-detected email
-  threat_detection_policy {
-    state           = "Enabled"
-    email_addresses = [local.detected_user_email]
-  }
-
-  tags = local.common_tags
-}
+# Note: Per-application databases are defined in app-baseline.tf

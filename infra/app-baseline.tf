@@ -161,3 +161,47 @@ resource "azurerm_federated_identity_credential" "app" {
   parent_id           = azurerm_user_assigned_identity.app[each.key].id
   subject             = "system:serviceaccount:${local.app_k8s[each.key].namespace}:${local.app_k8s[each.key].service_account}"
 }
+
+########################################
+# Per-App SQL Databases and SQL SSO (secretless)
+########################################
+
+locals {
+  # Safe per-app database names (<= 128 chars for SQL DB)
+  app_sql_db_names = {
+    for a, v in local.app_map : a => substr("sqldb-${v.short}-${var.environment}-${var.location_code}", 0, 128)
+  }
+}
+
+resource "azurerm_mssql_database" "app" {
+  for_each = local.app_map
+
+  name           = local.app_sql_db_names[each.key]
+  server_id      = azurerm_mssql_server.main.id
+  collation      = "SQL_Latin1_General_CP1_CI_AS"
+  license_type   = "LicenseIncluded"
+  sku_name       = "S1"
+  zone_redundant = false
+
+  threat_detection_policy {
+    state           = "Enabled"
+    email_addresses = [local.detected_user_email]
+  }
+
+  tags = merge(local.common_tags, { App = each.key })
+}
+
+# Create AAD contained users per app DB for the app's UAMI using sqlsso provider
+resource "sqlsso_mssql_server_aad_account" "app_uami_db_owner" {
+  for_each = local.app_map
+
+  sql_server_dns = azurerm_mssql_server.main.fully_qualified_domain_name
+  database       = azurerm_mssql_database.app[each.key].name
+  account_name   = azurerm_user_assigned_identity.app[each.key].name
+  object_id      = azurerm_user_assigned_identity.app[each.key].principal_id
+  role           = "owner"
+
+  depends_on = [
+    azurerm_mssql_firewall_rule.client_ip
+  ]
+}

@@ -203,13 +203,8 @@ resource "azurerm_role_assignment" "workload_identity_storage" {
 }
 
 # Grant SQL Database access to the workload identities
-resource "azurerm_role_assignment" "workload_identity_sql" {
-  for_each = var.clusters
-
-  scope                = azurerm_mssql_database.main.id
-  role_definition_name = "SQL DB Contributor"
-  principal_id         = azurerm_user_assigned_identity.workload_identity[each.key].principal_id
-}
+// Note: Shared SQL DB removed. If cluster-level identities need ARM-level SQL roles,
+// assign at the server scope or at specific app DB scopes as needed in the future.
 
 # Grant ACR access to AKS clusters (if ACR is enabled)
 resource "azurerm_role_assignment" "aks_acr_pull" {
@@ -394,14 +389,7 @@ resource "azapi_update_resource" "aks_enable_asvni" {
 }
 
 # Sample secrets in Key Vault with auto-generated connection strings for each cluster
-resource "azurerm_key_vault_secret" "database_connection" {
-  for_each = var.clusters
-
-  name         = "database-connection-string-${each.value.name_suffix}"
-  value        = "Server=${azurerm_mssql_server.main.fully_qualified_domain_name};Database=${azurerm_mssql_database.main.name};Authentication=Active Directory Managed Identity;User Id=${azurerm_user_assigned_identity.workload_identity[each.key].client_id};"
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [time_sleep.kv_rbac_propagation]
-}
+// Removed shared connection-string secrets (secretless MI). Use per-app DB names via outputs.
 
 resource "azurerm_key_vault_secret" "storage_connection" {
   for_each = var.clusters

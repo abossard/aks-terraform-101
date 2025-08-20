@@ -179,10 +179,7 @@ output "sql_server_fqdn" {
   value       = azurerm_mssql_server.main.fully_qualified_domain_name
 }
 
-output "sql_database_name" {
-  description = "Name of the SQL Database"
-  value       = azurerm_mssql_database.main.name
-}
+// Shared SQL database has been removed; per-app databases are available via new outputs below
 
 # Container Registry (if enabled)
 output "container_registry_name" {
@@ -338,6 +335,24 @@ output "app_service_account_manifest_files" {
   }
 }
 
+# Per-app SQL Databases (secretless MI)
+output "app_sql_databases" {
+  description = "Per-app SQL database names"
+  value       = { for a, v in azurerm_mssql_database.app : a => v.name }
+}
+
+output "app_sql_connection_info" {
+  description = "Per-app SQL connection info (no secrets)"
+  value = {
+    for a, v in azurerm_mssql_database.app : a => {
+      server_fqdn      = azurerm_mssql_server.main.fully_qualified_domain_name
+      database         = v.name
+      authentication   = "Active Directory Managed Identity"
+      connectionString = "Server=${azurerm_mssql_server.main.fully_qualified_domain_name};Database=${v.name};Authentication=Active Directory Managed Identity;"
+    }
+  }
+}
+
 output "app_kv_private_fqdns" {
   description = "Per-app Key Vault Private Endpoint FQDNs (in the privatelink zone)"
   value = {
@@ -405,7 +420,6 @@ output "deployment_summary" {
     key_vault           = azurerm_key_vault.main.name
     storage_account     = azurerm_storage_account.main.name
     sql_server          = azurerm_mssql_server.main.name
-    sql_database        = azurerm_mssql_database.main.name
     log_analytics       = azurerm_log_analytics_workspace.main.name
     app_insights        = azurerm_application_insights.main.name
 

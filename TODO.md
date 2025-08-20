@@ -5,17 +5,18 @@
 
 # Application specific setup (for each)
 - [✅] Should every cluster have it's own private link subnet? No
-- [ ] Applications always belong to ONE cluster. And should only had WI federation to a service account in that cluster.
+- [✅] Applications always belong to ONE cluster. And should only had WI federation to a service account in that cluster.
 - [✅] What is in the application config? 
       - name
 - [ ] What is create per application
     - [✅] Create Key Vault for each application
-    - [ ] Create SQL Database for each application with Private Endpoint
+    - [✅] Create SQL Database for each application with Private Endpoint
     - [✅] Create Workload Identity and Management Identity
     - [✅] Create RBAC for the Managed Identity
     - [wip] all with private links/endpoints
     - [✅] Kubernetes Namespace and Service Account
     - [✅] Output Private Links IP and FQDN/ Generate Network Policy Yaml / Example deployment yaml
+    - [ ] App specific resources should go into their own resource group
 
 
 # Example Application

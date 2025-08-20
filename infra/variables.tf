@@ -85,7 +85,7 @@ variable "clusters" {
       min_count    = 1
       max_count    = 3
       vm_size      = "Standard_D2s_v3"
-      applications = ["app1"]
+      applications = ["app1", "app2"]
     }
     backend = {
       name_suffix  = "backend"
@@ -93,7 +93,7 @@ variable "clusters" {
       min_count    = 1
       max_count    = 2
       vm_size      = "Standard_D2s_v3"
-      applications = ["app2"]
+      applications = ["api1", "api2"]
     }
   }
 }
