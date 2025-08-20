@@ -78,7 +78,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     pod_cidr            = var.pod_cidr
     service_cidr        = var.service_cidr
     dns_service_ip      = var.dns_service_ip
-    outbound_type       = "userDefinedRouting" # Force egress through UDR (Azure Firewall)
+    outbound_type       = var.route_egress_through_firewall ? "userDefinedRouting" : "loadBalancer"
   }
 
   # Enable Azure Key Vault Secrets Provider (CSI Driver)
