@@ -494,3 +494,4 @@ tfplan
 # Generated cheatsheets (rendered by Terraform)
 infra/cheatsheets/generated/
 diagram.drawio
+infra/tfplan

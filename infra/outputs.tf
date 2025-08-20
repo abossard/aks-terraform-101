@@ -303,9 +303,9 @@ output "app_service_account" {
 
 # Rendered ServiceAccount YAMLs (per cluster)
 output "service_account_manifest_files" {
-  description = "Paths to the generated ServiceAccount YAML files for each cluster"
+  description = "Paths to the generated ServiceAccount YAML files per cluster/app"
   value = {
-    for k, v in local_file.service_accounts : k => v.filename
+    for k, v in local_file.app_service_accounts : k => v.filename
   }
 }
 
@@ -326,10 +326,8 @@ output "app_uami_client_ids" {
 }
 
 output "app_federated_identity_ids" {
-  description = "Per-app per-cluster federated identity credential IDs"
-  value = {
-    for k, v in azurerm_federated_identity_credential.app : k => v.id
-  }
+  description = "Per-app federated identity credential IDs (scoped to owning cluster)"
+  value       = { for k, v in azurerm_federated_identity_credential.app : k => v.id }
 }
 
 # Rendered per-app ServiceAccount YAMLs (per cluster/app)

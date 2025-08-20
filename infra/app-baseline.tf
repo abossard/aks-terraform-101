@@ -126,57 +126,38 @@ locals {
   }
 }
 
-# Render ServiceAccount YAML per app per cluster (so users can apply to any cluster easily)
+// Render one ServiceAccount per app for its owning cluster only
 locals {
-  app_sa_manifests = {
-    for combo in flatten([
-      for ck, cv in var.clusters : [
-        for ak, av in local.app_k8s : {
-          key       = "${ck}|${ak}"
-          cluster   = ck
-          app       = ak
-          namespace = av.namespace
-          sa_name   = av.service_account
-        }
-      ]
-      ]) : combo.key => templatefile(
+  app_sa_templates = {
+    for a, v in local.app_k8s : a => templatefile(
       "${path.module}/k8s/serviceaccount.tmpl.yaml",
       {
-        service_account_name        = combo.sa_name,
-        workload_identity_client_id = local.app_identities[combo.app].client_id,
+        service_account_name        = v.service_account,
+        workload_identity_client_id = local.app_identities[a].client_id,
         tenant_id                   = data.azurerm_client_config.current.tenant_id,
-        namespace                   = combo.namespace
+        namespace                   = v.namespace
       }
     )
   }
 }
 
 resource "local_file" "app_service_accounts" {
-  for_each = local.app_sa_manifests
-
+  for_each = local.app_sa_templates
   content  = each.value
-  filename = "${path.module}/k8s/generated/${replace(each.key, "|", "-")}-serviceaccount.yaml"
+  filename = "${path.module}/k8s/generated/${local.app_map[each.key].cluster_key}-${each.key}-serviceaccount.yaml"
 }
 
 ########################################
 # Federated Identity per app per cluster (AKS OIDC issuer)
 ########################################
 
-locals {
-  app_fic_keys = flatten([
-    for ck, cv in var.clusters : [
-      for ak, av in local.app_k8s : "${ck}|${ak}"
-    ]
-  ])
-}
-
 resource "azurerm_federated_identity_credential" "app" {
-  for_each = toset(local.app_fic_keys)
+  for_each = local.app_map
 
-  name                = "fc-${split("|", each.key)[1]}-${var.environment}-${var.project}-${split("|", each.key)[0]}"
+  name                = "fc-${each.key}-${var.environment}-${var.project}-${each.value.cluster_key}"
   resource_group_name = azurerm_resource_group.main.name
   audience            = ["api://AzureADTokenExchange"]
-  issuer              = azurerm_kubernetes_cluster.main[split("|", each.key)[0]].oidc_issuer_url
-  parent_id           = azurerm_user_assigned_identity.app[split("|", each.key)[1]].id
-  subject             = "system:serviceaccount:${local.app_k8s[split("|", each.key)[1]].namespace}:${local.app_k8s[split("|", each.key)[1]].service_account}"
+  issuer              = azurerm_kubernetes_cluster.main[each.value.cluster_key].oidc_issuer_url
+  parent_id           = azurerm_user_assigned_identity.app[each.key].id
+  subject             = "system:serviceaccount:${local.app_k8s[each.key].namespace}:${local.app_k8s[each.key].service_account}"
 }

@@ -69,28 +69,31 @@ variable "kubernetes_version" {
 
 # Multiple AKS Clusters Configuration
 variable "clusters" {
-  description = "AKS cluster configurations"
+  description = "AKS cluster configurations, including the applications that belong to each cluster. Applications must be defined under a single cluster (one owner)."
   type = map(object({
-    name_suffix = string
-    subnet_cidr = string
-    min_count   = number
-    max_count   = number
-    vm_size     = string
+    name_suffix  = string
+    subnet_cidr  = string
+    min_count    = number
+    max_count    = number
+    vm_size      = string
+    applications = list(string)
   }))
   default = {
     public = {
-      name_suffix = "public"
-      subnet_cidr = "10.240.0.0/24"
-      min_count   = 1
-      max_count   = 3
-      vm_size     = "Standard_D2s_v3"
+      name_suffix  = "public"
+      subnet_cidr  = "10.240.0.0/24"
+      min_count    = 1
+      max_count    = 3
+      vm_size      = "Standard_D2s_v3"
+      applications = ["app1"]
     }
     backend = {
-      name_suffix = "backend"
-      subnet_cidr = "10.240.4.0/24"
-      min_count   = 1
-      max_count   = 2
-      vm_size     = "Standard_D2s_v3"
+      name_suffix  = "backend"
+      subnet_cidr  = "10.240.4.0/24"
+      min_count    = 1
+      max_count    = 2
+      vm_size      = "Standard_D2s_v3"
+      applications = ["app2"]
     }
   }
 }
@@ -224,13 +227,4 @@ variable "tags" {
   }
 }
 
-# Application list
-variable "applications" {
-  description = "List of application names for which per-app resources will be created (e.g., identities). Names should be lowercase, alphanumeric or hyphens."
-  type        = list(string)
-  default     = ["app1", "app2"]
-  validation {
-    condition     = length(var.applications) > 0
-    error_message = "Provide at least one application name in var.applications."
-  }
-}
+## Note: Applications are now defined per cluster (see variable "clusters").

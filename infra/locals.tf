@@ -189,18 +189,28 @@ locals {
     data.azurerm_client_config.current.object_id
   )
 
-  # Applications: sanitize and derive per-app naming helpers
-  applications_normalized = [for a in var.applications : lower(trimspace(a))]
+  # Applications: derived from clusters. Each app belongs to exactly one cluster.
+  app_cluster_pairs = flatten([
+    for ck, cv in var.clusters : [
+      for a in cv.applications : {
+        app         = lower(trimspace(a))
+        cluster_key = ck
+      }
+    ]
+  ])
 
-  # Valid storage account chars (lowercase alphanumeric only). We'll sanitize per usage
+  # Ensure uniqueness of app names across clusters (detect duplicates)
+  app_names            = [for x in local.app_cluster_pairs : x.app]
+  app_names_distinct   = distinct(local.app_names)
+  app_names_are_unique = length(local.app_names) == length(local.app_names_distinct)
+
+  # Build app map with owning cluster
   app_map = {
-    for a in local.applications_normalized : a => {
-      # Short code for names where brevity matters
-      short = replace(replace(replace(a, "-", ""), "_", ""), " ", "")
-      # CAF-ish base name fragment
-      base = "${a}-${var.environment}-${var.location_code}"
-      # Common tags with App
-      tags = merge(local.common_tags, { App = a })
+    for x in local.app_cluster_pairs : x.app => {
+      cluster_key = x.cluster_key
+      short       = replace(replace(replace(x.app, "-", ""), "_", ""), " ", "")
+      base        = "${x.app}-${var.environment}-${var.location_code}"
+      tags        = merge(local.common_tags, { App = x.app, Cluster = x.cluster_key })
     }
   }
 
