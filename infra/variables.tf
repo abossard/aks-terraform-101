@@ -163,6 +163,17 @@ variable "enable_api_server_vnet_integration" {
 }
 
 
+variable "enable_private_cluster" {
+  description = "Enable AKS private cluster (API server private endpoint)."
+  type        = bool
+  default     = false
+  validation {
+    condition     = can(var.enable_private_cluster)
+    error_message = "enable_private_cluster must be true or false."
+  }
+}
+
+
 variable "enable_container_registry" {
   description = "Enable Azure Container Registry"
   type        = bool

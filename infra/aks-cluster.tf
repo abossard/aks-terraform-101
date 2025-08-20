@@ -380,6 +380,7 @@ resource "azapi_update_resource" "aks_enable_asvni" {
   body = {
     properties = {
       apiServerAccessProfile = {
+  enablePrivateCluster = var.enable_private_cluster
         enableVnetIntegration = true
         subnetId              = azurerm_subnet.apiserver[each.key].id
       }
