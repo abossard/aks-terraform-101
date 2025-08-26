@@ -131,21 +131,6 @@ output "application_gateway_fqdn" {
   value       = azurerm_public_ip.app_gateway.fqdn
 }
 
-# Azure Firewall
-output "azure_firewall_name" {
-  description = "Name of the Azure Firewall"
-  value       = azurerm_firewall.main.name
-}
-
-output "azure_firewall_private_ip" {
-  description = "Private IP address of the Azure Firewall"
-  value       = azurerm_firewall.main.ip_configuration[0].private_ip_address
-}
-
-output "azure_firewall_public_ip" {
-  description = "Public IP address of the Azure Firewall"
-  value       = azurerm_public_ip.firewall.ip_address
-}
 
 # Key Vault
 output "key_vault_name" {
@@ -432,7 +417,7 @@ output "deployment_summary" {
 
     # Infrastructure
     application_gateway = azurerm_application_gateway.main.name
-    azure_firewall      = azurerm_firewall.main.name
+  # azure_firewall removed
     key_vault           = azurerm_key_vault.main.name
     storage_account     = azurerm_storage_account.main.name
     sql_server          = azurerm_mssql_server.main.name
@@ -450,7 +435,7 @@ output "deployment_summary" {
     web_app_routing_enabled = true
     prometheus_enabled      = true
     waf_enabled             = true
-    firewall_mode           = var.firewall_enforcement_enabled ? "Enforcement" : "Audit"
+  firewall_mode           = "Removed"
 
     deployment_time = timestamp()
   }

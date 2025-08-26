@@ -195,26 +195,6 @@ variable "secret_rotation_interval" {
   default     = "2m"
 }
 
-variable "firewall_enforcement_enabled" {
-  description = "Enable firewall rule enforcement (true) or audit mode only (false)"
-  type        = bool
-  default     = false
-  validation {
-    condition     = can(var.firewall_enforcement_enabled)
-    error_message = "Firewall enforcement must be true or false."
-  }
-}
-
-# Egress routing control
-variable "route_egress_through_firewall" {
-  description = "Route AKS egress through Azure Firewall using UDR (true) or use load balancer SNAT (false)."
-  type        = bool
-  default     = false
-  validation {
-    condition     = can(var.route_egress_through_firewall)
-    error_message = "route_egress_through_firewall must be true or false."
-  }
-}
 
 # Tags
 variable "tags" {

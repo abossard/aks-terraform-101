@@ -4,12 +4,12 @@ This guide will walk you through deploying a production-ready AKS cluster follow
 
 ## 🏗️ Architecture Overview
 
-**Traffic Flow**: Internet → Application Gateway (WAF) → NGINX Ingress (Internal) → Cilium eBPF → Pods → Azure Firewall (Egress) → Internet
+**Traffic Flow**: Internet → Application Gateway (WAF) → NGINX Ingress (Internal) → Cilium eBPF → Pods → Internet
 
 **Key Features**:
 - ✅ AKS with CNI Overlay + Cilium eBPF data plane
 - ✅ Zero Trust networking (single public IP)
-- ✅ Azure Firewall for egress control
+- ✅ Simplified egress (no centralized firewall)
 - ✅ Private endpoints for all Azure services
 - ✅ Workload Identity for secure authentication
 - ✅ Application Gateway with WAF protection
@@ -168,13 +168,8 @@ kubectl exec -n aks-app deployment/sample-app -- nslookup $(terraform output -ra
 # Should resolve to private IP (10.240.3.x)
 ```
 
-### 4. Azure Firewall
-```bash
-# Check firewall logs for blocked traffic
-az monitor log-analytics query \
-  --workspace $(terraform output -raw log_analytics_workspace_id) \
-  --analytics-query "AzureDiagnostics | where Category == 'AzureFirewallNetworkRule' | limit 10"
-```
+### 4. Egress
+Egress is provided via the platform load balancer SNAT (no Azure Firewall deployed).
 
 ## 🔧 Common Issues and Solutions
 
@@ -248,8 +243,7 @@ az network private-dns link vnet list \
 ### Access Azure Portal
 1. **Log Analytics**: View logs and metrics
 2. **Application Insights**: Application performance monitoring
-3. **Azure Firewall**: Network traffic monitoring
-4. **Application Gateway**: WAF logs and metrics
+3. **Application Gateway**: WAF logs and metrics
 
 ### Key Monitoring Queries
 ```kql
@@ -264,11 +258,6 @@ AzureDiagnostics
 | where Category == "ApplicationGatewayAccessLog"
 | where httpStatus_d >= 400
 
-// Firewall blocked requests
-AzureDiagnostics
-| where ResourceProvider == "MICROSOFT.NETWORK" 
-| where Category == "AzureFirewallApplicationRule"
-| where msg_s contains "Deny"
 ```
 
 ## 🧹 Cleanup
@@ -316,7 +305,7 @@ az keyvault secret set \
 ### Troubleshooting Resources
 - [AKS Troubleshooting Guide](https://docs.microsoft.com/en-us/azure/aks/troubleshooting)
 - [Application Gateway Troubleshooting](https://docs.microsoft.com/en-us/azure/application-gateway/application-gateway-troubleshooting-502)
-- [Azure Firewall Documentation](https://docs.microsoft.com/en-us/azure/firewall/)
+<!-- Azure Firewall documentation removed -->
 
 ### Get Help
 ```bash

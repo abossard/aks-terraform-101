@@ -1,7 +1,7 @@
 # Open Tasks
 - [wip] Enable VNET Integration from Terraform, each cluster in it's own VNET
 - [wip] Enable Private Kubernetes API Server, but configurable via Terraform variable (default public)
-- [check] Status of the Konnectivyt Agent, what if it remains deployed?
+- [check] Status of the Konnectivity Agent, what if it remains deployed?
 
 # Application specific setup (for each)
 - [✅] Should every cluster have it's own private link subnet? No
@@ -17,7 +17,8 @@
     - [✅] Kubernetes Namespace and Service Account
     - [✅] Output Private Links IP and FQDN/ Generate Network Policy Yaml / Example deployment yaml
     - [wip] App specific resources should go into their own resource group
-    - [ ] Move SQL Private links to the app resource group
+    - [n/a] Move SQL Private links to the app resource group
+    - [ ] App specific Managed Identities in the application resource group
 
 
 # Example Application

@@ -12,7 +12,7 @@ locals {
   # Networking
   vnet_name                     = "vnet-${local.base_name}-001"
   app_gateway_subnet_name       = "snet-agw-${var.environment}-${var.location_code}-001"
-  firewall_subnet_name          = "AzureFirewallSubnet" # Fixed name required
+  # Firewall subnet removed
   private_endpoints_subnet_name = "snet-pe-${var.environment}-${var.location_code}-001"
 
   # Network Security Groups
@@ -53,11 +53,7 @@ locals {
   app_gateway_pip_name = "pip-agw-${var.environment}-${var.location_code}-001"
   app_gateway_name     = "agw-main-${var.environment}-${var.location_code}-001"
 
-  # Azure Firewall
-  firewall_pip_name         = "pip-fw-${var.environment}-${var.location_code}-001"
-  firewall_name             = "fw-hub-${var.environment}-${var.location_code}-001"
-  firewall_policy_name      = "fwpol-main-${var.environment}-${var.location_code}-001"
-  firewall_route_table_name = "rt-fw-${var.environment}-${var.location_code}-001"
+  # Azure Firewall removed (pip/name/policy/route table locals dropped)
 
   # Storage (no hyphens, lowercase, alphanumeric only)
   storage_name = "st${var.environment}${var.project}${var.location_code}${random_string.unique_suffix.result}"
@@ -82,7 +78,7 @@ locals {
 
   # Subnet calculations
   app_gateway_subnet_cidr = cidrsubnet(var.vnet_address_space, 8, 1) # 10.240.1.0/24
-  firewall_subnet_cidr    = cidrsubnet(var.vnet_address_space, 8, 2) # 10.240.2.0/24
+  # firewall_subnet_cidr removed
   pe_subnet_cidr          = cidrsubnet(var.vnet_address_space, 8, 3) # 10.240.3.0/24
 
   # Automatic API server subnet allocation
@@ -172,8 +168,7 @@ locals {
   # - Use var.tags as the source of truth for Environment/Project/Location
   # - Add only deterministic computed tags here
   common_tags = merge(var.tags, {
-    FirewallMode = var.firewall_enforcement_enabled ? "Enforcement" : "Audit"
-    DeployedBy   = coalesce(var.security_email, "terraform-deployment")
+    DeployedBy = coalesce(var.security_email, "terraform-deployment")
   })
 
   # Auto-detected user information with fallbacks

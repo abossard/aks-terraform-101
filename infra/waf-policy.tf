@@ -41,7 +41,7 @@ resource "azurerm_web_application_firewall_policy" "main" {
   # Allow all other traffic (public app access)
   policy_settings {
     enabled                     = true
-    mode                        = var.firewall_enforcement_enabled ? "Prevention" : "Detection"
+    mode                        = "Prevention" # Static mode after firewall removal
     request_body_check          = true
     file_upload_limit_in_mb     = 100
     max_request_body_size_in_kb = 128

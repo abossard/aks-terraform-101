@@ -234,7 +234,5 @@ resource "sqlsso_mssql_server_aad_account" "app_uami_db_owner" {
   object_id      = azurerm_user_assigned_identity.app[each.key].principal_id
   role           = "owner"
 
-  depends_on = [
-    azurerm_mssql_firewall_rule.client_ip
-  ]
+  # Firewall rule dependency removed (no longer required after firewall removal)
 }

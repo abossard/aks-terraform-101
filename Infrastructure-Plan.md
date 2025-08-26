@@ -5,7 +5,7 @@
 Production-ready Azure Kubernetes Service (AKS) cluster deployment specification with Azure CNI Overlay, Cilium networking, Applic4. **Subnets** (dynamically calculated)
    - AKS Subnet: For cluster nodes
    - Application Gateway Subnet: For Application Gateway deployment
-   - Azure Firewall Subnet: For Azure Firewall deployment (AzureFirewallSubnet)
+    - (Removed) Azure Firewall Subnet: Previously reserved for Azure Firewall (now removed)
    - Private Endpoints Subnet: For Azure Key Vault, Storage, and SQL Server private endpoints
 
 5. **Network Security Group** Gateway with WAF, and NGINX Ingress Controller. All resource names follow Microsoft Cloud Adoption Framework (CAF) naming conventions with dynamic network address calculation.
@@ -64,7 +64,7 @@ graph TB
             LA[Log Analytics<br/>Container Insights]
             ACR[Azure Container Registry<br/>Premium SKU<br/>Optional]
             NSG[Network Security Group<br/>AKS Subnet Rules]
-            AFW[Azure Firewall<br/>Egress Control<br/>FQDN Filtering]
+            %% (Firewall removed)
             KV[Azure Key Vault<br/>Secrets & Certificates<br/>Private Endpoint]
             SA[Azure Storage<br/>Blob/File Storage<br/>Private Endpoint]
             SQL[Azure SQL Server<br/>Database<br/>Private Endpoint]
@@ -90,11 +90,10 @@ graph TB
     POD1 -.-> ACR
     POD2 -.-> ACR
     
-    %% Egress Control
-    NODE1 -.-> AFW
-    NODE2 -.-> AFW
-    NODE3 -.-> AFW
-    AFW -.-> Internet
+    %% Egress (direct via Azure SNAT)
+    NODE1 -.-> Internet
+    NODE2 -.-> Internet
+    NODE3 -.-> Internet
     
     %% Private Endpoint Connections
     POD1 -.-> KV
@@ -112,7 +111,7 @@ graph TB
     classDef network fill:#cc99ff,stroke:#333,stroke-width:2px
     
     class Internet,PIP,AGW publicLayer
-    class ILB,LA,ACR,NSG,AFW,KV,SA,SQL azureService
+    class ILB,LA,ACR,NSG,KV,SA,SQL azureService
     class NODE1,NODE2,NODE3 kubernetes
     class POD1,POD2,POD3 pods
 ```
@@ -133,15 +132,15 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 - **Internal Routing**: Traffic is routed internally to NGINX Ingress Controller (no direct internet access to AKS)
 - **eBPF Networking**: Cilium provides high-performance networking with identity-based security policies
 - **Pod Distribution**: Application pods run across auto-scaling nodes with overlay networking
-- **Egress Control**: Azure Firewall controls all outbound traffic from AKS cluster with FQDN filtering
+- **Egress**: Outbound traffic from nodes uses Azure load balancer SNAT directly (firewall removed)
 - **Private Services**: Key Vault, Storage, and SQL Server accessible only via private endpoints
-- **Zero Trust**: Only Application Gateway has public IP access, all egress traffic controlled by Azure Firewall, all Azure services use private endpoints
+- **Zero Trust**: Only Application Gateway has public IP access; data services use private endpoints
 
 ## Architecture Requirements
 
 ### Network Architecture
 **Internet → Application Gateway (Public IP + WAF) → NGINX Ingress (Internal LB) → Cilium eBPF → Pods**
-**Pods → Azure Firewall (Egress Control + FQDN Filtering) → Internet**
+**Pods → Standard Load Balancer (SNAT) → Internet**
 
 ### Core Design Principles
 - Single public entry point (Application Gateway only)
@@ -174,7 +173,7 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 - **Application Gateway**: Layer 7 load balancer with WAF
 - **NGINX Ingress**: Internal ingress controller
 - **WAF Protection**: Web Application Firewall on gateway
-- **Azure Firewall**: Egress control and FQDN filtering for outbound traffic
+- **Egress**: Direct SNAT via Azure load balancer (firewall removed)
 - **Azure Key Vault**: Secure secrets and certificate management with private endpoint access
 - **Azure Storage**: Blob and file storage with private endpoint access
 - **Azure SQL Server**: Managed database service with private endpoint access
@@ -182,13 +181,10 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 - **Azure Policy**: Governance and compliance policies
 - **Log Analytics**: Centralized logging and monitoring
 
-### Azure Firewall Egress Control
-- **Outbound Traffic Control**: All AKS cluster egress traffic routed through Azure Firewall
-- **FQDN Filtering**: Whitelist-based approach for allowed external domains
-- **Network Rules**: Layer 3/4 traffic filtering for non-HTTP/HTTPS traffic
-- **Application Rules**: Layer 7 inspection for HTTP/HTTPS traffic
-- **Threat Intelligence**: Built-in threat intelligence feeds
-- **DNS Proxy**: Azure Firewall acts as DNS proxy for enhanced security
+### Egress Strategy
+- **Outbound Path**: AKS nodes egress directly via Azure load balancer SNAT
+- **Filtering**: Apply Cilium network policies; add NAT Gateway/Firewall later if requirements grow
+- **Simplification**: Eliminates dedicated firewall management and UDR complexity
 
 ### Private Azure Services Integration
 - **Private Endpoints**: All Azure services (Key Vault, Storage, SQL) accessible only via private endpoints
@@ -265,37 +261,20 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
    - **Subnet**: AKS subnet
    - **Public Access**: None (internal only)
 
-### Azure Firewall Specifications
-10. **Azure Firewall**
-    - **SKU**: Standard or Premium (for TLS inspection)
-    - **Subnet**: AzureFirewallSubnet (dedicated subnet name required)
-    - **Public IP**: Dedicated public IP for outbound traffic
-    - **DNS Proxy**: Enabled for enhanced security
-    - **Threat Intelligence**: Enabled with alert and deny mode
-
-11. **Firewall Policy**
-    - **Application Rules**: FQDN-based filtering for HTTP/HTTPS
-    - **Network Rules**: IP-based filtering for non-HTTP traffic
-    - **NAT Rules**: Source NAT for outbound traffic
-    - **Rule Collections**: Organized by priority and action
-
-### User-Defined Routes (UDR)
-12. **Route Table**
-    - **AKS Subnet Routes**: Force egress traffic through Azure Firewall
-    - **Default Route**: 0.0.0.0/0 → Azure Firewall private IP
-    - **Service Endpoints**: Bypass firewall for Azure services (optional)
+### (Removed) Firewall & UDR
+10-12. Azure Firewall, Firewall Policy, Route Table: Removed (direct egress design)
 
 ### Monitoring and Security
 13. **Log Analytics Workspace**
     - Container insights enabled
     - AKS cluster logs integration
-    - Azure Firewall logs integration
+    - (Firewall removed) Platform egress only
 
 14. **Diagnostic Settings**
     - Cluster audit logs
     - Control plane logs
     - Performance metrics
-    - Azure Firewall logs and metrics
+    - (Firewall removed) No firewall diagnostics
 
 ### Optional Components
 15. **Azure Container Registry** (if enabled)
@@ -383,16 +362,17 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 
 ### Traffic Flow
 **Internet → Application Gateway (Public IP + WAF) → NGINX Ingress (Internal IP) → Kubernetes Services → Pods**
-**Pods → Azure Firewall (Egress Control + FQDN Filtering) → Internet**
+**Pods → Standard Load Balancer (SNAT) → Internet**
 
 ### Security Controls
 - **Application Gateway**: WAF filtering, SSL termination, DDoS protection
 - **NGINX Ingress**: Internal load balancing, request routing, SSL handling
-- **Azure Firewall**: Egress control, FQDN filtering, threat intelligence, DNS proxy
 - **Cilium**: Micro-segmentation, identity-based policies, API-aware filtering
 - **Azure RBAC**: Role-based access control for cluster management
 - **NSG Rules**: Subnet-level network access control
-- **UDR (User-Defined Routes)**: Force egress traffic through Azure Firewall
+- **Private Endpoints**: Secure, private connectivity to Azure services
+- **Workload Identity**: Pod-level identity for Azure service authentication
+- **Key Vault Integration**: Secure secret and certificate management
 - **Private Endpoints**: Secure, private connectivity to Azure services
 - **Workload Identity**: Pod-level identity for Azure service authentication
 - **Key Vault Integration**: Secure secret and certificate management
@@ -417,9 +397,8 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 3. Private DNS zones for private endpoint resolution
 4. AKS cluster with Cilium networking and workload identity
 5. Application Gateway with WAF configuration
-6. Azure Firewall with egress rules
-7. NGINX Ingress Controller with internal IP
-8. Monitoring and logging configuration
+6. NGINX Ingress Controller with internal IP
+7. Monitoring and logging configuration
 
 ### Validation Requirements
 - **Connectivity Testing**: Application Gateway → NGINX → Services
@@ -566,38 +545,8 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 3. Implement SSL certificates
 4. Performance testing and optimization
 
-## Azure Firewall Configuration Resources
-
-### Official Documentation
-- [Restrict egress traffic for AKS clusters](https://docs.microsoft.com/en-us/azure/aks/limit-egress-traffic) - Complete guide for configuring Azure Firewall with AKS
-- [Azure Firewall documentation](https://docs.microsoft.com/en-us/azure/firewall/) - Comprehensive Azure Firewall documentation
-- [Tutorial: Deploy and configure Azure Firewall using the Azure portal](https://docs.microsoft.com/en-us/azure/firewall/tutorial-firewall-deploy-portal)
-
-### GitHub Examples and Templates
-- [AKS Secure Baseline with Azure Firewall](https://github.com/Azure/AKS-Landing-Zone-Accelerator) - Microsoft's reference implementation for secure AKS with Azure Firewall
-- [AKS with Azure Firewall Terraform](https://github.com/Azure/terraform-azurerm-aks) - Official Terraform modules for AKS with Azure Firewall
-- [AKS Private Cluster with Egress Control](https://github.com/Azure-Samples/private-aks-cluster-terraform-devops) - Complete example of private AKS cluster with Azure Firewall
-
-### Configuration Examples
-- [AKS Egress with Azure Firewall - Bicep Templates](https://github.com/Azure/azure-quickstart-templates/tree/master/quickstarts/microsoft.containerservice/aks-azml) - Infrastructure as Code templates
-- [Azure Firewall Rules for AKS](https://github.com/Azure/azure-firewall-rules-samples) - Sample firewall rules for common AKS scenarios
-
-### Required Firewall Rules for AKS
-The following FQDN and network rules are typically required for AKS egress:
-
-#### Application Rules (FQDN)
-- `*.hcp.<region>.azmk8s.io` - AKS control plane communication
-- `mcr.microsoft.com` - Microsoft Container Registry
-- `*.data.mcr.microsoft.com` - MCR data endpoints
-- `management.azure.com` - Azure Resource Manager
-- `login.microsoftonline.com` - Azure AD authentication
-- `packages.microsoft.com` - Microsoft packages
-- `acs-mirror.azureedge.net` - AKS mirror content
-
-#### Network Rules (IP/Port)
-- Azure Cloud CIDR on port 443 (HTTPS)
-- Azure Cloud CIDR on port 9000 (tunnel communication)
-- NTP servers on port 123 (time synchronization)
+## (Removed) Azure Firewall Configuration Resources
+Firewall documentation removed; reintroduce if centralized egress control is added again.
 
 ## References
 

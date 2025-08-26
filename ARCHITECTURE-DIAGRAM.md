@@ -1,6 +1,6 @@
 ## AKS Secure Baseline – Architecture Diagram
 
-This diagram visualizes the infrastructure defined in `infra/*.tf`: dual AKS clusters (public/backend) behind Application Gateway (WAF), private endpoints to data services, Azure Firewall egress, workload identities, and monitoring.
+This diagram visualizes the infrastructure defined in `infra/*.tf`: dual AKS clusters (public/backend) behind Application Gateway (WAF), private endpoints to data services, workload identities, and monitoring (Azure Firewall removed for simplified egress).
 
 ```mermaid
 %%{init: {'theme':'neutral','flowchart':{'curve':'basis'}} }%%
@@ -30,10 +30,7 @@ flowchart LR
         NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.backend.nginx_internal_ip"]
       end
 
-      subgraph SNET_FW["Subnet: AzureFirewallSubnet\n(10.240.2.0/24)"]
-        FW_PIP["Public IP (Firewall)"]
-        AZFW["Azure Firewall (Standard)\nPolicy + Egress rules"]
-      end
+      %% Firewall subnet removed
 
       subgraph SNET_PE["Subnet: snet-pe-${environment}-${location_code}-001\n(10.240.3.0/24)"]
         PE_KV["PE: Key Vault"]
@@ -86,10 +83,9 @@ flowchart LR
   NGINX_PUB --> AKS_PUB
   NGINX_BACK --> AKS_BACK
 
-  %% Egress (conceptual) via Azure Firewall
-  AKS_PUB -. egress .-> AZFW
-  AKS_BACK -. egress .-> AZFW
-  AZFW --> FW_PIP --> NET
+  %% Egress now via standard SLB SNAT (no Azure Firewall)
+  AKS_PUB -. egress .-> NET
+  AKS_BACK -. egress .-> NET
 
   %% Private Endpoints to services
   PE_KV --> KV
@@ -143,17 +139,16 @@ flowchart LR
   classDef id fill:#f3e5f5,stroke:#ce93d8,stroke-width:1px;
   classDef mon fill:#e8f5e9,stroke:#a5d6a7,stroke-width:1px;
 
-  class VNET,SNET_AGW,SNET_PUB,SNET_BACK,SNET_FW,SNET_PE,PDNS net;
+  class VNET,SNET_AGW,SNET_PUB,SNET_BACK,SNET_PE,PDNS net;
   class AGW,PIP_AGW,KV,SA,SQLS,SQLDB,ACR svc;
-  class AZFW,FW_PIP sec;
   class ID_PUB,ID_BACK,AGW_ID,ID_SQL_APP id;
   class LAW,APPI,AMW,DCE,DCR mon;
 ```
 
 ### What’s shown
-- Per Terraform: VNet and subnets for App Gateway, AKS clusters (public/backend), Azure Firewall, and Private Endpoints
+- Per Terraform: VNet and subnets for App Gateway, AKS clusters (public/backend), and Private Endpoints (Azure Firewall removed)
 - Ingress path: Internet → App Gateway (WAF) → NGINX Ingress (internal IP) → AKS pods
-- Egress path: AKS nodes → Azure Firewall → Internet (policy-based; UDR association optional)
+- Egress path: AKS nodes → Standard Load Balancer SNAT → Internet
 - Private endpoints for Key Vault, Storage (blob/file), and SQL Server, with Private DNS zones linked to the VNet
 - Workload identities per cluster and RBAC to KV/Storage/SQL; App Gateway’s UAMI to Key Vault for TLS secrets
 - Optional ACR with AcrPull to cluster kubelets

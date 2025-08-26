@@ -8,7 +8,6 @@
 #    - Resource Group, VNet, Subnets, NSGs
 #
 # 2. Security Layer (security-layer.tf)
-#    - Azure Firewall with egress control
 #    - Key Vault with private endpoint
 #    - Storage Account with private endpoint
 #    - SQL Server with private endpoint
@@ -34,9 +33,9 @@
 #    - Diagnostic settings for all resources
 #    - Alerts and saved queries
 #
-# Architecture Flow:
-# Internet ’ App Gateway (Public IP + WAF) ’ NGINX Ingress (Internal LB) ’ 
-# Cilium eBPF ’ Pods ’ Azure Firewall (Egress) ’ Internet
+# Architecture Flow (simplified egress):
+# Internet -> App Gateway (Public IP + WAF) -> NGINX Ingress (Internal LB) -> 
+# Cilium eBPF -> Pods -> Standard Load Balancer SNAT -> Internet
 #
 # All Azure services use private endpoints only.
 # Only the Application Gateway has a public IP address.

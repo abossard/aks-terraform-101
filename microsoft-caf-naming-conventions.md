@@ -45,8 +45,7 @@ Microsoft CAF provides standardized naming conventions for Azure resources to en
 |----------|-------------|---------|
 | Key vault | `kv` | `kv-secrets-prod-eastus-001` |
 | Managed identity | `id` | `id-workload-prod-eastus-001` |
-| Azure Firewall | `fw` | `fw-hub-prod-eastus-001` |
-| Firewall policy | `fwpol` | `fwpol-main-prod-eastus-001` |
+| Web Application Firewall Policy | `wafpol` | `wafpol-main-prod-eastus-001` |
 
 ### Storage
 | Resource | Abbreviation | Example |
@@ -133,20 +132,6 @@ app_gateway_pip_name = "pip-agw-prod-eus-001"
 app_gateway_name = "agw-main-prod-eus-001"
 ```
 
-### Azure Firewall
-```hcl
-# Firewall Public IP
-firewall_pip_name = "pip-fw-prod-eus-001"
-
-# Azure Firewall
-firewall_name = "fw-hub-prod-eus-001"
-
-# Firewall Policy
-firewall_policy_name = "fwpol-main-prod-eus-001"
-
-# Route Table
-firewall_route_table_name = "rt-fw-prod-eus-001"
-```
 
 ### Private Services
 ```hcl
