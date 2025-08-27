@@ -1,0 +1,1 @@
+export access_key=$(az storage account keys list --subscription "b503856d-964d-4c51-94a4-f713c1d328fe" -g "rg-else-tf-stg-gwc-001" --account-name stelsetfstggwc001 --query "[0].value" -o tsv)

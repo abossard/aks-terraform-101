@@ -63,7 +63,7 @@ locals {
   storage_name = "st${var.environment}${var.project}${var.location_code}${random_string.unique_suffix.result}"
 
   # Key Vault (3-24 characters, alphanumeric and hyphens only)
-  key_vault_name = "kv-${var.environment}${var.project}${random_string.unique_suffix.result}"
+  key_vault_name = "kv-${var.environment}${var.project}${random_string.unique_suffix.result}1"
 
   # SQL Server
   sql_server_name   = "sql-main-${var.environment}-${var.location_code}-${random_string.unique_suffix.result}"

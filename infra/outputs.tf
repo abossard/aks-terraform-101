@@ -132,20 +132,20 @@ output "application_gateway_fqdn" {
 }
 
 # Azure Firewall
-output "azure_firewall_name" {
-  description = "Name of the Azure Firewall"
-  value       = azurerm_firewall.main.name
-}
+# output "azure_firewall_name" {
+#   description = "Name of the Azure Firewall"
+#   value       = azurerm_firewall.main.name
+# }
 
-output "azure_firewall_private_ip" {
-  description = "Private IP address of the Azure Firewall"
-  value       = azurerm_firewall.main.ip_configuration[0].private_ip_address
-}
+# output "azure_firewall_private_ip" {
+#   description = "Private IP address of the Azure Firewall"
+#   value       = azurerm_firewall.main.ip_configuration[0].private_ip_address
+# }
 
-output "azure_firewall_public_ip" {
-  description = "Public IP address of the Azure Firewall"
-  value       = azurerm_public_ip.firewall.ip_address
-}
+# output "azure_firewall_public_ip" {
+#   description = "Public IP address of the Azure Firewall"
+#   value       = azurerm_public_ip.firewall.ip_address
+# }
 
 # Key Vault
 output "key_vault_name" {
@@ -432,12 +432,12 @@ output "deployment_summary" {
 
     # Infrastructure
     application_gateway = azurerm_application_gateway.main.name
-    azure_firewall      = azurerm_firewall.main.name
-    key_vault           = azurerm_key_vault.main.name
-    storage_account     = azurerm_storage_account.main.name
-    sql_server          = azurerm_mssql_server.main.name
-    log_analytics       = azurerm_log_analytics_workspace.main.name
-    app_insights        = azurerm_application_insights.main.name
+    # azure_firewall      = azurerm_firewall.main.name
+    key_vault       = azurerm_key_vault.main.name
+    storage_account = azurerm_storage_account.main.name
+    sql_server      = azurerm_mssql_server.main.name
+    log_analytics   = azurerm_log_analytics_workspace.main.name
+    app_insights    = azurerm_application_insights.main.name
 
     # Access information
     public_ip = azurerm_public_ip.app_gateway.ip_address

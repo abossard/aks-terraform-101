@@ -31,6 +31,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   sku                 = "PerGB2018"
   retention_in_days   = 30
   tags                = local.common_tags
+  depends_on          = [azurerm_resource_group.main]
 }
 
 # Virtual Network
@@ -40,6 +41,7 @@ resource "azurerm_virtual_network" "main" {
   resource_group_name = azurerm_resource_group.main.name
   address_space       = [var.vnet_address_space]
   tags                = local.common_tags
+  depends_on          = [azurerm_resource_group.main]
 }
 
 # AKS Cluster Subnets
@@ -53,6 +55,7 @@ resource "azurerm_subnet" "clusters" {
 
   # Enable private endpoint policies  
   private_endpoint_network_policies = "Enabled"
+  depends_on                        = [azurerm_virtual_network.main]
 }
 
 # Application Gateway Subnet
@@ -64,18 +67,20 @@ resource "azurerm_subnet" "app_gateway" {
 
   # Application Gateway requires dedicated subnet
   private_endpoint_network_policies = "Enabled"
+  depends_on                        = [azurerm_virtual_network.main]
 }
 
 # Azure Firewall Subnet (fixed name required)
-resource "azurerm_subnet" "firewall" {
-  name                 = local.firewall_subnet_name
-  resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = [local.firewall_subnet_cidr]
+# resource "azurerm_subnet" "firewall" {
+#   name                 = local.firewall_subnet_name
+#   resource_group_name  = azurerm_resource_group.main.name
+#   virtual_network_name = azurerm_virtual_network.main.name
+#   address_prefixes     = [local.firewall_subnet_cidr]
 
-  # Azure Firewall requires specific configuration
-  private_endpoint_network_policies = "Enabled"
-}
+#   # Azure Firewall requires specific configuration
+#   private_endpoint_network_policies = "Enabled"
+#   depends_on                        = [azurerm_virtual_network.main]
+# }
 
 # Private Endpoints Subnet
 resource "azurerm_subnet" "private_endpoints" {
@@ -86,6 +91,7 @@ resource "azurerm_subnet" "private_endpoints" {
 
   # Disable private endpoint network policies
   private_endpoint_network_policies = "Disabled"
+  depends_on                        = [azurerm_virtual_network.main]
 }
 
 # API Server subnets per cluster (ASVNI)
@@ -109,6 +115,7 @@ resource "azurerm_subnet" "apiserver" {
       ]
     }
   }
+  depends_on = [azurerm_virtual_network.main]
 }
 
 # Network Security Groups for AKS Clusters
@@ -162,6 +169,7 @@ resource "azurerm_network_security_group" "clusters" {
       destination_address_prefix = security_rule.value.destination_address_prefix
     }
   }
+  depends_on = [azurerm_resource_group.main]
 }
 
 # Network Security Group for Application Gateway Subnet
@@ -207,7 +215,7 @@ resource "azurerm_network_security_group" "app_gateway" {
     source_port_range          = "*"
     destination_port_ranges    = ["80", "443"]
     source_address_prefix      = "*"
-    destination_address_prefix = "10.240.0.0/16" # VNet address space
+    destination_address_prefix = var.vnet_address_space # VNet address space
   }
 
   dynamic "security_rule" {
@@ -224,6 +232,7 @@ resource "azurerm_network_security_group" "app_gateway" {
       destination_address_prefix = security_rule.value.destination_address_prefix
     }
   }
+  depends_on = [azurerm_resource_group.main]
 }
 
 # Network Security Group for Private Endpoints Subnet
@@ -258,6 +267,7 @@ resource "azurerm_network_security_group" "private_endpoints" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+  depends_on = [azurerm_resource_group.main]
 }
 
 # Associate NSGs with Cluster Subnets
@@ -266,14 +276,35 @@ resource "azurerm_subnet_network_security_group_association" "clusters" {
 
   subnet_id                 = azurerm_subnet.clusters[each.key].id
   network_security_group_id = azurerm_network_security_group.clusters[each.key].id
+  depends_on                = [azurerm_subnet.clusters, azurerm_network_security_group.clusters]
 }
 
 resource "azurerm_subnet_network_security_group_association" "app_gateway" {
   subnet_id                 = azurerm_subnet.app_gateway.id
   network_security_group_id = azurerm_network_security_group.app_gateway.id
+  depends_on                = [azurerm_subnet.app_gateway, azurerm_network_security_group.app_gateway]
 }
 
 resource "azurerm_subnet_network_security_group_association" "private_endpoints" {
   subnet_id                 = azurerm_subnet.private_endpoints.id
   network_security_group_id = azurerm_network_security_group.private_endpoints.id
+  depends_on                = [azurerm_subnet.private_endpoints, azurerm_network_security_group.private_endpoints]
+}
+
+resource "azurerm_virtual_network_peering" "netpeer" {
+  allow_forwarded_traffic                = true
+  allow_gateway_transit                  = false
+  allow_virtual_network_access           = true
+  local_subnet_names                     = []
+  name                                   = "peer-vnet-else-hub-prd-gwc-001"
+  only_ipv6_peering_enabled              = false
+  peer_complete_virtual_networks_enabled = true
+  remote_subnet_names                    = []
+  remote_virtual_network_id              = "/subscriptions/29977929-2412-48ea-88ec-71d0d1414410/resourceGroups/rg-else-hub-prd-gwc-001/providers/Microsoft.Network/virtualNetworks/vnet-else-hub-prd-gwc-001"
+  resource_group_name                    = azurerm_resource_group.main.name
+  use_remote_gateways                    = false
+  virtual_network_name                   = azurerm_virtual_network.main.name
+  depends_on = [
+    azurerm_virtual_network.main,
+  ]
 }

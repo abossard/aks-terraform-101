@@ -15,20 +15,15 @@ dns_service_ip    = "172.16.0.10"
 
 # AKS Configuration
 kubernetes_version = "1.28.5"
-node_vm_size      = "Standard_D4s_v3"
-kubernetes_version = "1.28.5"
-min_node_count    = 1
-max_node_count    = 10
-node_vm_size      = "Standard_D4s_v3"
 
 # SQL Server Configuration (REQUIRED)
 sql_admin_username         = "sqladmin"
-sql_admin_password         = "YourStrongPassword123!"  # Change this!
-sql_azuread_admin_login    = "sql-admins"
-sql_azuread_admin_object_id = "12345678-1234-1234-1234-123456789012"  # Azure AD group object ID
+# sql_admin_password         = "YourStrongPassword123!"  # Change this!
+# sql_azuread_admin_login    = "sql-admins"
+# sql_azuread_admin_object_id = "12345678-1234-1234-1234-123456789012"  # Azure AD group object ID
 
 # Security Configuration (REQUIRED)
-security_email = "security@yourcompany.com"  # Change this!
+# security_email = "security@yourcompany.com"  # Change this!
 
 # Application Configuration
 app_namespace        = "aks-app"

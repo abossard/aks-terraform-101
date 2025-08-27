@@ -145,229 +145,231 @@ resource "azurerm_private_endpoint" "storage" {
 resource "azurerm_mssql_firewall_rule" "client_ip" {
   name             = "AllowCurrentClientIP"
   server_id        = azurerm_mssql_server.main.id
-  start_ip_address = chomp(data.http.myip.response_body)
-  end_ip_address   = chomp(data.http.myip.response_body)
+  start_ip_address = "147.161.248.127"
+  # start_ip_address = chomp(data.http.myip.response_body)
+  end_ip_address = "147.161.248.127"
+  # end_ip_address   = chomp(data.http.myip.response_body)
 }
 
-# Azure Firewall Public IP
-resource "azurerm_public_ip" "firewall" {
-  name                = local.firewall_pip_name
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  allocation_method   = "Static"
-  sku                 = "Standard"
-  zones               = ["1", "2", "3"]
-}
+# # Azure Firewall Public IP
+# resource "azurerm_public_ip" "firewall" {
+#   name                = local.firewall_pip_name
+#   resource_group_name = azurerm_resource_group.main.name
+#   location            = azurerm_resource_group.main.location
+#   allocation_method   = "Static"
+#   sku                 = "Standard"
+#   zones               = ["1", "2", "3"]
+# }
 
-# Azure Firewall Policy
-resource "azurerm_firewall_policy" "main" {
-  name                = local.firewall_policy_name
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  sku                 = "Standard"
+# # Azure Firewall Policy
+# resource "azurerm_firewall_policy" "main" {
+#   name                = local.firewall_policy_name
+#   resource_group_name = azurerm_resource_group.main.name
+#   location            = azurerm_resource_group.main.location
+#   sku                 = "Standard"
 
-  dns {
-    proxy_enabled = true
-  }
+#   dns {
+#     proxy_enabled = true
+#   }
 
-  threat_intelligence_mode = var.firewall_enforcement_enabled ? "Alert" : "Off"
-}
+#   threat_intelligence_mode = var.firewall_enforcement_enabled ? "Alert" : "Off"
+# }
 
-# Firewall Policy Rule Collection Group
-resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
-  name               = "aks-egress-rules"
-  firewall_policy_id = azurerm_firewall_policy.main.id
-  priority           = 100
+# # Firewall Policy Rule Collection Group
+# resource "azurerm_firewall_policy_rule_collection_group" "aks_egress" {
+#   name               = "aks-egress-rules"
+#   firewall_policy_id = azurerm_firewall_policy.main.id
+#   priority           = 100
 
-  # Application Rules for AKS
-  application_rule_collection {
-    name     = "aks-fqdn-rules"
-    priority = 100
-    action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
+#   # Application Rules for AKS
+#   application_rule_collection {
+#     name     = "aks-fqdn-rules"
+#     priority = 100
+#     action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
 
-    rule {
-      name = "aks-core-dependencies"
-      protocols {
-        type = "Https"
-        port = 443
-      }
-      protocols {
-        type = "Http"
-        port = 80
-      }
-      source_addresses = [
-        var.clusters.public.subnet_cidr,
-        var.clusters.backend.subnet_cidr,
-      ]
-      destination_fqdns = [
-        # Core AKS dependencies
-        "*.hcp.${var.location_code}.azmk8s.io",
-        "mcr.microsoft.com",
-        "*.data.mcr.microsoft.com",
-        "management.azure.com",
-        "login.microsoftonline.com",
-        "packages.microsoft.com",
-        "acs-mirror.azureedge.net",
-        "packages.aks.azure.com", # New FQDN for 2025
+#     rule {
+#       name = "aks-core-dependencies"
+#       protocols {
+#         type = "Https"
+#         port = 443
+#       }
+#       protocols {
+#         type = "Http"
+#         port = 80
+#       }
+#       source_addresses = [
+#         var.clusters.public.subnet_cidr,
+#         var.clusters.backend.subnet_cidr,
+#       ]
+#       destination_fqdns = [
+#         # Core AKS dependencies
+#         "*.hcp.${var.location_code}.azmk8s.io",
+#         "mcr.microsoft.com",
+#         "*.data.mcr.microsoft.com",
+#         "management.azure.com",
+#         "login.microsoftonline.com",
+#         "packages.microsoft.com",
+#         "acs-mirror.azureedge.net",
+#         "packages.aks.azure.com", # New FQDN for 2025
 
-        # Ubuntu updates
-        "security.ubuntu.com",
-        "azure.archive.ubuntu.com",
-        "changelogs.ubuntu.com",
+#         # Ubuntu updates
+#         "security.ubuntu.com",
+#         "azure.archive.ubuntu.com",
+#         "changelogs.ubuntu.com",
 
-        # Docker Hub (if needed)
-        "*.docker.io",
-        "*.docker.com",
-        "registry-1.docker.io",
-        "auth.docker.io",
-        "production.cloudflare.docker.com",
+#         # Docker Hub (if needed)
+#         "*.docker.io",
+#         "*.docker.com",
+#         "registry-1.docker.io",
+#         "auth.docker.io",
+#         "production.cloudflare.docker.com",
 
-        # GitHub Container Registry (if needed)
-        "ghcr.io",
-        "pkg-containers.githubusercontent.com"
-      ]
-    }
+#         # GitHub Container Registry (if needed)
+#         "ghcr.io",
+#         "pkg-containers.githubusercontent.com"
+#       ]
+#     }
 
-    rule {
-      name = "azure-monitor"
-      protocols {
-        type = "Https"
-        port = 443
-      }
-      source_addresses = [
-        var.clusters.public.subnet_cidr,
-        var.clusters.backend.subnet_cidr,
-      ]
-      destination_fqdns = [
-        "dc.services.visualstudio.com",
-        "*.ods.opinsights.azure.com",
-        "*.oms.opinsights.azure.com",
-        "*.monitoring.azure.com"
-      ]
-    }
-  }
+#     rule {
+#       name = "azure-monitor"
+#       protocols {
+#         type = "Https"
+#         port = 443
+#       }
+#       source_addresses = [
+#         var.clusters.public.subnet_cidr,
+#         var.clusters.backend.subnet_cidr,
+#       ]
+#       destination_fqdns = [
+#         "dc.services.visualstudio.com",
+#         "*.ods.opinsights.azure.com",
+#         "*.oms.opinsights.azure.com",
+#         "*.monitoring.azure.com"
+#       ]
+#     }
+#   }
 
-  # Network Rules for AKS
-  network_rule_collection {
-    name     = "aks-network-rules"
-    priority = 200
-    action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
+#   # Network Rules for AKS
+#   network_rule_collection {
+#     name     = "aks-network-rules"
+#     priority = 200
+#     action   = var.firewall_enforcement_enabled ? "Allow" : "Allow"
 
-    rule {
-      name      = "aks-tcp-ports"
-      protocols = ["TCP"]
-      source_addresses = [
-        var.clusters.public.subnet_cidr,
-        var.clusters.backend.subnet_cidr,
-      ]
-      destination_addresses = ["AzureCloud.${var.location}"]
-      destination_ports     = ["9000", "443"]
-    }
+#     rule {
+#       name      = "aks-tcp-ports"
+#       protocols = ["TCP"]
+#       source_addresses = [
+#         var.clusters.public.subnet_cidr,
+#         var.clusters.backend.subnet_cidr,
+#       ]
+#       destination_addresses = ["AzureCloud.${var.location}"]
+#       destination_ports     = ["9000", "443"]
+#     }
 
-    # Allow Azure DNS VIP if traffic traverses firewall under UDR
-    rule {
-      name      = "dns-azure-vip"
-      protocols = ["UDP", "TCP"]
-      source_addresses = [
-        var.clusters.public.subnet_cidr,
-        var.clusters.backend.subnet_cidr,
-      ]
-      destination_addresses = ["168.63.129.16"]
-      destination_ports     = ["53"]
-    }
+#     # Allow Azure DNS VIP if traffic traverses firewall under UDR
+#     rule {
+#       name      = "dns-azure-vip"
+#       protocols = ["UDP", "TCP"]
+#       source_addresses = [
+#         var.clusters.public.subnet_cidr,
+#         var.clusters.backend.subnet_cidr,
+#       ]
+#       destination_addresses = ["168.63.129.16"]
+#       destination_ports     = ["53"]
+#     }
 
-    rule {
-      name      = "aks-udp-ports"
-      protocols = ["UDP"]
-      source_addresses = [
-        var.clusters.public.subnet_cidr,
-        var.clusters.backend.subnet_cidr,
-      ]
-      destination_addresses = ["AzureCloud.${var.location}"]
-      destination_ports     = ["1194", "123"]
-    }
+#     rule {
+#       name      = "aks-udp-ports"
+#       protocols = ["UDP"]
+#       source_addresses = [
+#         var.clusters.public.subnet_cidr,
+#         var.clusters.backend.subnet_cidr,
+#       ]
+#       destination_addresses = ["AzureCloud.${var.location}"]
+#       destination_ports     = ["1194", "123"]
+#     }
 
-    rule {
-      name      = "ntp-time-sync"
-      protocols = ["UDP"]
-      source_addresses = [
-        var.clusters.public.subnet_cidr,
-        var.clusters.backend.subnet_cidr,
-      ]
-      destination_addresses = ["*"]
-      destination_ports     = ["123"]
-    }
-  }
-}
+#     rule {
+#       name      = "ntp-time-sync"
+#       protocols = ["UDP"]
+#       source_addresses = [
+#         var.clusters.public.subnet_cidr,
+#         var.clusters.backend.subnet_cidr,
+#       ]
+#       destination_addresses = ["*"]
+#       destination_ports     = ["123"]
+#     }
+#   }
+# }
 
-# Azure Firewall
-resource "azurerm_firewall" "main" {
-  name                = local.firewall_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku_name            = "AZFW_VNet"
-  sku_tier            = "Standard"
-  firewall_policy_id  = azurerm_firewall_policy.main.id
+# # Azure Firewall
+# resource "azurerm_firewall" "main" {
+#   name                = local.firewall_name
+#   location            = azurerm_resource_group.main.location
+#   resource_group_name = azurerm_resource_group.main.name
+#   sku_name            = "AZFW_VNet"
+#   sku_tier            = "Standard"
+#   firewall_policy_id  = azurerm_firewall_policy.main.id
 
-  ip_configuration {
-    name                 = "configuration"
-    subnet_id            = azurerm_subnet.firewall.id
-    public_ip_address_id = azurerm_public_ip.firewall.id
-  }
+#   ip_configuration {
+#     name                 = "configuration"
+#     subnet_id            = azurerm_subnet.firewall.id
+#     public_ip_address_id = azurerm_public_ip.firewall.id
+#   }
 
-}
+# }
 
-# Diagnostic settings: send Azure Firewall logs to Log Analytics (resource-specific tables)
-resource "azurerm_monitor_diagnostic_setting" "firewall_logs" {
-  name                       = "fw-logs-to-law"
-  target_resource_id         = azurerm_firewall.main.id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
-  # Use resource-specific tables for better performance/cost
-  log_analytics_destination_type = "Dedicated"
+# # Diagnostic settings: send Azure Firewall logs to Log Analytics (resource-specific tables)
+# resource "azurerm_monitor_diagnostic_setting" "firewall_logs" {
+#   name                       = "fw-logs-to-law"
+#   target_resource_id         = azurerm_firewall.main.id
+#   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+#   # Use resource-specific tables for better performance/cost
+#   log_analytics_destination_type = "Dedicated"
 
-  enabled_log {
-    category = "AZFWNetworkRule"
-  }
-  enabled_log {
-    category = "AZFWApplicationRule"
-  }
-  enabled_log {
-    category = "AZFWDnsQuery"
-  }
-  enabled_log {
-    category = "AZFWThreatIntel"
-  }
+#   enabled_log {
+#     category = "AZFWNetworkRule"
+#   }
+#   enabled_log {
+#     category = "AZFWApplicationRule"
+#   }
+#   enabled_log {
+#     category = "AZFWDnsQuery"
+#   }
+#   enabled_log {
+#     category = "AZFWThreatIntel"
+#   }
 
-  # Optional advanced categories (uncomment if needed and supported in your SKU/features)
-  # enabled_log { category = "AZFWFlowTrace" }
-  # enabled_log { category = "AZFWFatFlow" }
-  # enabled_log { category = "AZFWApplicationRuleAggregation" }
-  # enabled_log { category = "AZFWNetworkRuleAggregation" }
-  # enabled_log { category = "AZFWIdpsSignature" }
-}
+#   # Optional advanced categories (uncomment if needed and supported in your SKU/features)
+#   # enabled_log { category = "AZFWFlowTrace" }
+#   # enabled_log { category = "AZFWFatFlow" }
+#   # enabled_log { category = "AZFWApplicationRuleAggregation" }
+#   # enabled_log { category = "AZFWNetworkRuleAggregation" }
+#   # enabled_log { category = "AZFWIdpsSignature" }
+# }
 
-# Route Table for AKS Subnet (force traffic through firewall)
-resource "azurerm_route_table" "aks_routes" {
-  name                = local.firewall_route_table_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+# # Route Table for AKS Subnet (force traffic through firewall)
+# resource "azurerm_route_table" "aks_routes" {
+#   name                = local.firewall_route_table_name
+#   location            = azurerm_resource_group.main.location
+#   resource_group_name = azurerm_resource_group.main.name
 
-  route {
-    name                   = "default-via-firewall"
-    address_prefix         = "0.0.0.0/0"
-    next_hop_type          = "VirtualAppliance"
-    next_hop_in_ip_address = azurerm_firewall.main.ip_configuration[0].private_ip_address
-  }
+#   route {
+#     name                   = "default-via-firewall"
+#     address_prefix         = "0.0.0.0/0"
+#     next_hop_type          = "VirtualAppliance"
+#     next_hop_in_ip_address = azurerm_firewall.main.ip_configuration[0].private_ip_address
+#   }
 
-}
+# }
 
 # Associate route table with all AKS cluster subnets (forces egress via firewall)
-resource "azurerm_subnet_route_table_association" "aks_clusters" {
-  for_each = var.route_egress_through_firewall ? azurerm_subnet.clusters : {}
+# resource "azurerm_subnet_route_table_association" "aks_clusters" {
+#   for_each = var.route_egress_through_firewall ? azurerm_subnet.clusters : {}
 
-  subnet_id      = azurerm_subnet.clusters[each.key].id
-  route_table_id = azurerm_route_table.aks_routes.id
-}
+#   subnet_id      = azurerm_subnet.clusters[each.key].id
+#   route_table_id = azurerm_route_table.aks_routes.id
+# }
 
 # Route table association enforces egress via Azure Firewall. Ensure required control plane and DNS
 # exceptions are allowed (see rules above) so that AKS nodes remain Ready.

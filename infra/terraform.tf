@@ -40,13 +40,21 @@ terraform {
       version = "~> 3.5"
     }
   }
+  backend "azurerm" {
+    resource_group_name  = "rg-else-tf-stg-gwc-001"
+    storage_account_name = "stelsetfstggwc001"
+    container_name       = "state"
+    key                  = "aks-terraform-101/prod.terraform.tfstate"
+    subscription_id      = "b503856d-964d-4c51-94a4-f713c1d328fe"
+  }
 }
 
 # Configure the Azure Provider
 provider "azurerm" {
   # Use Entra ID authentication for storage accounts instead of account keys
   storage_use_azuread = true
-
+  subscription_id     = "b503856d-964d-4c51-94a4-f713c1d328fe"
+  tenant_id           = "372ee9e0-9ce0-4033-a64a-c07073a91ecd"
   features {
     key_vault {
       purge_soft_delete_on_destroy    = true
@@ -56,6 +64,7 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+
 
 }
 

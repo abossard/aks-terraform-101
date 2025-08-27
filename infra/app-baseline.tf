@@ -23,6 +23,7 @@ resource "azurerm_user_assigned_identity" "app" {
   name                = local.app_identity_name_map[each.key]
   resource_group_name = azurerm_resource_group.app[each.key].name
   tags                = each.value.tags
+  depends_on          = [azurerm_resource_group.app]
 }
 
 # Convenience locals for downstream references
@@ -46,7 +47,7 @@ locals {
   app_kv_name_map = {
     for a, v in local.app_map : a => lower(
       substr(
-        "akv-${var.environment}${var.project}${v.short}${random_string.unique_suffix.result}",
+        "akv-${var.environment}${var.project}${v.short}${random_string.unique_suffix.result}1",
         0,
         24
       )
@@ -86,6 +87,7 @@ resource "azurerm_key_vault" "app" {
       error_message = "Key Vault name must be 3-24 chars, start with a letter, end with letter/digit, only alphanumeric or hyphen."
     }
   }
+  depends_on = [azurerm_resource_group.app]
 }
 
 resource "azurerm_private_endpoint" "app_kv" {
@@ -108,7 +110,8 @@ resource "azurerm_private_endpoint" "app_kv" {
     private_dns_zone_ids = [azurerm_private_dns_zone.main["key_vault"].id]
   }
 
-  tags = local.app_map[each.key].tags
+  tags       = local.app_map[each.key].tags
+  depends_on = [azurerm_subnet.private_endpoints, azurerm_key_vault.app, azurerm_private_dns_zone.main["key_vault"]]
 }
 
 # RBAC: allow each app's managed identity to read secrets from its KV
@@ -119,6 +122,7 @@ resource "azurerm_role_assignment" "app_kv_secrets_user" {
   role_definition_id = data.azurerm_role_definition.kv_secrets_user.role_definition_id
   principal_id       = local.app_identities[each.key].principal_id
   principal_type     = "ServicePrincipal"
+  depends_on         = [azurerm_key_vault.app]
 }
 
 ########################################
@@ -193,6 +197,7 @@ resource "azurerm_federated_identity_credential" "app" {
   issuer              = azurerm_kubernetes_cluster.main[each.value.cluster_key].oidc_issuer_url
   parent_id           = azurerm_user_assigned_identity.app[each.key].id
   subject             = "system:serviceaccount:${local.app_k8s[each.key].namespace}:${local.app_k8s[each.key].service_account}"
+  depends_on          = [azurerm_resource_group.app]
 }
 
 ########################################
@@ -221,7 +226,8 @@ resource "azurerm_mssql_database" "app" {
     email_addresses = [local.detected_user_email]
   }
 
-  tags = merge(local.common_tags, { App = each.key })
+  tags       = merge(local.common_tags, { App = each.key })
+  depends_on = [azurerm_mssql_server.main]
 }
 
 # Create AAD contained users per app DB for the app's UAMI using sqlsso provider
@@ -235,6 +241,6 @@ resource "sqlsso_mssql_server_aad_account" "app_uami_db_owner" {
   role           = "owner"
 
   depends_on = [
-    azurerm_mssql_firewall_rule.client_ip
+    azurerm_mssql_database.app
   ]
 }
