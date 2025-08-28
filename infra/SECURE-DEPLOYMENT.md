@@ -156,6 +156,32 @@ terraform apply -var="environment=prod"
 4. **Key Vault contains all generated secrets for recovery**
 5. **User must have appropriate Azure permissions for auto-detection**
 
+## 🧪 SQL Private Endpoint Hardening Workflow
+
+Phased approach:
+1. Bootstrap:
+   - `sql_public_network_enabled = true`
+   - `enable_sql_private_endpoint = true`
+2. Validate DNS inside VNet:
+   ```bash
+   terraform output -raw sql_server_fqdn
+   nslookup $(terraform output -raw sql_server_fqdn)
+   terraform output sql_private_endpoint_private_ip
+   ```
+3. Harden:
+   ```hcl
+   sql_public_network_enabled = false
+   ```
+   Then plan/apply.
+4. Safety:
+   Lifecycle precondition prevents disabling both at once.
+
+Observability:
+```bash
+terraform output sql_public_network_enabled
+terraform output sql_private_endpoint_private_ip
+```
+
 ## 🎉 Result
 
 After running `terraform apply`, you'll have:

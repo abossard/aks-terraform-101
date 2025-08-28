@@ -52,39 +52,57 @@ kubectl apply -f infra/k8s/generated/<cluster>-nginx-internal-controller.yaml
 
 ## Test the ingress
 
-1) Deploy the example:
 ```bash
 kubectl apply -f infra/k8s/examples/echo-server.yaml
-```
 2) Get the internal IP of the controller service:
 ```bash
 kubectl -n app-routing-system get svc nginx-internal-0 -o jsonpath='{.status.loadBalancer.ingress[0].ip}{"\n"}'
 ```
-3) Curl from a network that can reach the VNet IP:
 ```bash
 curl -i http://<INTERNAL_IP>/
 curl -i http://<INTERNAL_IP>/v1
-```
 
 ## Fast Terraform tips
 
+
+The SQL logical server deploys with:
+- Private Endpoint (default `enable_sql_private_endpoint = true`)
+- Public access initially enabled (`sql_public_network_enabled = true`) for easy bootstrap
+
+Harden after validation:
+```bash
+terraform output -raw sql_server_fqdn
+nslookup $(terraform output -raw sql_server_fqdn)   # Should resolve private IP
+```
+Then set in `infra/terraform.tfvars`:
+```hcl
+sql_public_network_enabled = false
+```
+Re-apply:
+```bash
+terraform -chdir=infra plan
+terraform -chdir=infra apply
+```
+
+Check outputs:
+```bash
+terraform output sql_public_network_enabled
+terraform output sql_private_endpoint_private_ip
+```
+
+Keep `enable_sql_private_endpoint = true` unless you have an alternative private connectivity method.
 - Speed up plan/apply/destroy for dev loops:
     - `export TF_CLI_ARGS_plan="-parallelism=30"`
     - `export TF_CLI_ARGS_apply="-parallelism=30"`
-    - `export TF_CLI_ARGS_destroy="-parallelism=30"`
-- Consider `-refresh=false` for very short iterative loops (use with care).
 - Pre-register providers in Azure, then set `skip_provider_registration = true` in the azurerm provider.
 
 ## Recent highlights (last 2 days)
-
 - Added example app: `infra/k8s/examples/echo-server.yaml` with `/` and `/v1` routes via `nginx-internal`.
 - Ensured AKS identities have Network Contributor on the VNet to allow internal LoadBalancer creation (fixes 403 on subnets/read).
 - Clarified internal-only App Routing usage and where to find generated manifests under `infra/k8s/generated/`.
 
 To see exact commits locally:
-```bash
-git --no-pager log --since="2 days ago" --date=local --pretty=format:"%h %ad %s" --name-status
-```
+- Added SQL Private Endpoint + public access toggle (`sql_public_network_enabled` / `enable_sql_private_endpoint`).
 
 ## Troubleshooting
 

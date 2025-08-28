@@ -175,6 +175,17 @@ output "sql_server_fqdn" {
   value       = azurerm_mssql_server.main.fully_qualified_domain_name
 }
 
+# SQL Private Endpoint (optional)
+output "sql_private_endpoint_private_ip" {
+  description = "Private IP of the SQL Server Private Endpoint (null if not created)."
+  value       = try(azurerm_private_endpoint.sql[0].private_service_connection[0].private_ip_address, null)
+}
+
+output "sql_public_network_enabled" {
+  description = "Indicates whether public network access to SQL Server is enabled."
+  value       = var.sql_public_network_enabled
+}
+
 // Shared SQL database has been removed; per-app databases are available via new outputs below
 
 # Container Registry (if enabled)
@@ -421,6 +432,8 @@ output "deployment_summary" {
     key_vault           = azurerm_key_vault.main.name
     storage_account     = azurerm_storage_account.main.name
     sql_server          = azurerm_mssql_server.main.name
+  sql_public_access   = var.sql_public_network_enabled
+  sql_pe_private_ip   = try(azurerm_private_endpoint.sql[0].private_service_connection[0].private_ip_address, null)
     log_analytics       = azurerm_log_analytics_workspace.main.name
     app_insights        = azurerm_application_insights.main.name
 

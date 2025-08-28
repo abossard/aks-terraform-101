@@ -168,6 +168,36 @@ kubectl exec -n aks-app deployment/sample-app -- nslookup $(terraform output -ra
 # Should resolve to private IP (10.240.3.x)
 ```
 
+### 3b. SQL Private Endpoint & Hardening
+Bootstrap defaults deploy with both the public endpoint enabled and a Private Endpoint.
+
+Validation sequence:
+```bash
+terraform output -raw sql_server_fqdn
+nslookup $(terraform output -raw sql_server_fqdn)
+terraform output sql_private_endpoint_private_ip
+```
+Expect the FQDN to resolve to the private IP in the Private Endpoint subnet.
+
+Then test Azure AD authentication (Managed Identity or AAD principal).
+
+Harden by editing `infra/terraform.tfvars`:
+```hcl
+sql_public_network_enabled = false
+```
+Apply:
+```bash
+terraform -chdir=infra plan
+terraform -chdir=infra apply
+```
+Re-run resolution—public access should now fail externally while private still works.
+
+Helper outputs:
+```bash
+terraform output sql_public_network_enabled
+terraform output sql_private_endpoint_private_ip
+```
+
 ### 4. Egress
 Egress is provided via the platform load balancer SNAT (no Azure Firewall deployed).
 

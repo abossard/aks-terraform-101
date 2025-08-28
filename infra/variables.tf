@@ -195,6 +195,19 @@ variable "secret_rotation_interval" {
   default     = "2m"
 }
 
+# SQL Network Access Controls
+variable "sql_public_network_enabled" {
+  description = "Allow public network access to the SQL logical server (set false after validating Private Endpoint)."
+  type        = bool
+  default     = true
+}
+
+variable "enable_sql_private_endpoint" {
+  description = "Create a Private Endpoint for the SQL logical server."
+  type        = bool
+  default     = true
+}
+
 
 # Tags
 variable "tags" {
