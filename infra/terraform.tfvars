@@ -39,7 +39,7 @@ enable_secret_rotation    = true
 secret_rotation_interval  = "2m"
 
 # AKS API Server Private
-enable_private_cluster = true
+enable_private_cluster = false
 
 # Tags (Non-sensitive)
 tags = {
