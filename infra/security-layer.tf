@@ -49,15 +49,15 @@ resource "azurerm_key_vault" "main" {
 }
 
 # Grant current user Key Vault Administrator role for initial setup
-resource "azurerm_role_assignment" "current_user_key_vault_admin" {
+resource "azurerm_role_assignment" "enid_group_key_vault_admin" {
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Administrator"
-  principal_id         = data.azurerm_client_config.current.object_id
+  principal_id         = "f843ac69-ed69-4081-aa65-60f6f2143e80"
 }
 
 # Wait 60 seconds for RBAC propagation before secret operations
 resource "time_sleep" "kv_rbac_propagation" {
-  depends_on = [azurerm_role_assignment.current_user_key_vault_admin]
+  depends_on = [azurerm_role_assignment.enid_group_key_vault_admin]
 
   create_duration = "60s"
 }

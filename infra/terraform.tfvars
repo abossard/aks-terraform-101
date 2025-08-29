@@ -38,17 +38,26 @@ enable_container_registry = true
 enable_secret_rotation    = true
 secret_rotation_interval  = "2m"
 
+# AKS API Server Private
+enable_private_cluster = true
+
 # Tags (Non-sensitive)
 tags = {
-  "Application"    = "ServiceReport"
-  "budget"         = ""
-  "criticality"    = "low"
-  "environment"    = "dev"
-  "igar"           = "APM0012048"
-  "managedby"      = "manual"
-  "productmanager" = "anna.mazzoleni@it.abb.com"
-  "productowner"   = "bartlomiej.mroczek@pl.abb.com"
-  "startdate"      = "2025-07-29"
+  "application"        = "ELSE DigitalEcosystem"
+  "costcenter"         = "1R01P3442"
+  "costcenterowner"    = "callisto.gatti@it.abb.com"
+  "country"            = "Poland"
+  "environment"        = "stage"
+  "igar"               = "APM0011392"
+  "itsmnr"             = "ritm0350338"
+  "model"              = "dedicated"
+  "name"               = "abb-pol-el-serviceecosystemstage"
+  "owningbusinessarea" = "EL"
+  "owningdivision"     = "ELSE"
+  "budget"             = ""
+  "criticality"        = "business critical"
+  "managedby"          = "terraform"
+  "startdate"          = "2025-08-29"
 }
 clusters = {
   public = {
