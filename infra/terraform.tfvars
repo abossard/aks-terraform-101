@@ -68,8 +68,8 @@ clusters = {
     vm_size      = "Standard_D2s_v3"
     applications = ["app1", "app2"]
   }
-  backend = {
-    name_suffix  = "backend"
+  private = {
+    name_suffix  = "private"
     subnet_cidr  = "10.32.4.0/24"
     min_count    = 1
     max_count    = 2

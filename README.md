@@ -21,7 +21,7 @@ kubectl get nodes
 ```
 ## VNET Integration
 - check that you're using a supported region: https://learn.microsoft.com/azure/aks/api-server-vnet-integration
-- make sure that you have the respective providers registered (check with the az aks update command in the infra/k8s/generated/backend-cluster-setup.sh script).
+- make sure that you have the respective providers registered (check with the az aks update command in the infra/k8s/generated/private-cluster-setup.sh script).
 ## Where things are
 
 - Terraform (infrastructure)

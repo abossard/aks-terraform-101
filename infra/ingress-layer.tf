@@ -63,15 +63,10 @@ resource "azurerm_application_gateway" "main" {
     public_ip_address_id = azurerm_public_ip.app_gateway.id
   }
 
-  # Backend pools for both clusters (NGINX ingress internal IPs)
+  # Private pools for both clusters (NGINX ingress internal IPs)
   backend_address_pool {
     name         = "public-backend-pool"
     ip_addresses = [local.cluster_configs["public"].nginx_internal_ip]
-  }
-
-  backend_address_pool {
-    name         = "backend-backend-pool"
-    ip_addresses = [local.cluster_configs["backend"].nginx_internal_ip]
   }
 
   # HTTP settings for public cluster
@@ -90,21 +85,6 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
-  # HTTP settings for backend cluster
-  backend_http_settings {
-    name                  = "backend-backend-settings"
-    cookie_based_affinity = "Disabled"
-    path                  = "/"
-    port                  = 80
-    protocol              = "Http"
-    request_timeout       = 60
-    probe_name            = "backend-health-probe"
-
-    connection_draining {
-      enabled           = true
-      drain_timeout_sec = 300
-    }
-  }
 
   # Health probes for both clusters
   probe {
@@ -112,21 +92,6 @@ resource "azurerm_application_gateway" "main" {
     protocol            = "Http"
     path                = "/healthz"
     host                = local.cluster_configs["public"].nginx_internal_ip
-    port                = 80
-    interval            = 30
-    timeout             = 20
-    unhealthy_threshold = 3
-
-    match {
-      status_code = ["200"]
-    }
-  }
-
-  probe {
-    name                = "backend-health-probe"
-    protocol            = "Http"
-    path                = "/healthz"
-    host                = local.cluster_configs["backend"].nginx_internal_ip
     port                = 80
     interval            = 30
     timeout             = 20
@@ -153,6 +118,7 @@ resource "azurerm_application_gateway" "main" {
     protocol                       = "Https"
     ssl_certificate_name           = "wildcard-ssl-cert"
     host_name                      = "app.yourdomain.com"
+    firewall_policy_id = azurerm_web_application_firewall_policy.app1.id
   }
 
   http_listener {
@@ -162,6 +128,7 @@ resource "azurerm_application_gateway" "main" {
     protocol                       = "Https"
     ssl_certificate_name           = "wildcard-ssl-cert"
     host_name                      = "api.yourdomain.com"
+    firewall_policy_id = azurerm_web_application_firewall_policy.app2.id
   }
 
   # Wildcard SSL Certificate for both domains
@@ -202,9 +169,9 @@ resource "azurerm_application_gateway" "main" {
     name                       = "backend-api-routing"
     rule_type                  = "Basic"
     http_listener_name         = "backend-api-listener"
-    backend_address_pool_name  = "backend-backend-pool"
-    backend_http_settings_name = "backend-backend-settings"
-    priority                   = 300
+    backend_address_pool_name  = "public-backend-pool"
+    backend_http_settings_name = "public-backend-settings"
+    priority                   = 200
   }
 
   autoscale_configuration {

@@ -25,9 +25,9 @@ flowchart LR
         NGINX_PUB["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.public.nginx_internal_ip"]
       end
 
-      subgraph SNET_BACK["🔒 Backend Cluster Zone: snet-backend-${environment}-${location_code}-001\n(10.32.4.0/24)\nNSG: nsg-backend-${environment}-${location_code}-001"]
-        AKS_BACK["AKS Cluster: aks-${environment}-${project}-backend-${location_code}-001\n- CNI Overlay + Cilium\n- OIDC & Workload Identity\n- Outbound: loadBalancer"]
-        NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.backend.nginx_internal_ip"]
+      subgraph SNET_BACK["🔒 Private Cluster Zone: snet-private-${environment}-${location_code}-001\n(10.32.4.0/24)\nNSG: nsg-private-${environment}-${location_code}-001"]
+        AKS_BACK["AKS Cluster: aks-${environment}-${project}-private-${location_code}-001\n- CNI Overlay + Cilium\n- OIDC & Workload Identity\n- Outbound: loadBalancer"]
+        NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.private.nginx_internal_ip"]
       end
 
       subgraph SNET_PE["🔒 Private Endpoints Zone: snet-pe-${environment}-${location_code}-001\n(10.240.3.0/24)\nNSG: nsg-pe-${environment}-${location_code}-001"]
@@ -39,7 +39,7 @@ flowchart LR
 
       subgraph SNET_API["🔒 API Server Zones: snet-apiserver-*-${environment}-${location_code}-001\n(10.240.200.0/24 parent)\nNSGs: nsg-apiserver-*-${environment}-${location_code}-001"]
         API_PUB["API Server Subnet\n(Public Cluster)"]
-        API_BACK["API Server Subnet\n(Backend Cluster)"]
+        API_BACK["API Server Subnet\n(Private Cluster)"]
       end
     end
 
@@ -72,7 +72,7 @@ flowchart LR
 
     %% Identities & RBAC
     ID_PUB["UAMI: id-workload-public-${environment}-${location_code}-001"]
-    ID_BACK["UAMI: id-workload-backend-${environment}-${location_code}-001"]
+    ID_BACK["UAMI: id-workload-private-${environment}-${location_code}-001"]
     ID_SQL_APP["UAMI: id-sql-app-${environment}-${location_code}-001"]
 
   end
@@ -87,10 +87,10 @@ flowchart LR
   NGINX_BACK --> AKS_BACK
 
   %% Inter-cluster Communication (Unidirectional)
-  AKS_PUB -->|"✅ ALLOWED\nTCP 80,443\nNSG: AllowPublicToBackendCluster\nPriority: 400"| AKS_BACK
+  AKS_PUB -->|"✅ ALLOWED\nTCP 80,443\nNSG: AllowPublicToPrivateCluster\nPriority: 400"| AKS_BACK
 
   %% Blocked Traffic flows (Red - Security Boundaries)
-  SNET_BACK -.->|"❌ BLOCKED\nNSG: DenyBackendToPublicCluster\nPriority: 400"| SNET_PUB
+  SNET_BACK -.->|"❌ BLOCKED\nNSG: DenyPrivateToPublicCluster\nPriority: 400"| SNET_PUB
 
   %% Allowed Private Endpoint Access (Blue - Data Plane)
   AKS_PUB -->|"✅ TCP 443,1433,5432\nNSG: AllowPrivateEndpoints"| PE_KV
@@ -181,22 +181,22 @@ The infrastructure implements **zero-trust network segmentation** with the follo
 |-------------|-------------|--------|----------|----------|
 | Internet | Ingress (AGW) | ✅ HTTP/S 80,443 | AllowHttpsInbound | 1000 |
 | Ingress (AGW) | Public Cluster | ✅ HTTP/S 80,443 | AllowClusterSubnets | 1000 |
-| Ingress (AGW) | Backend Cluster | ✅ HTTP/S 80,443 | AllowClusterSubnets | 1000 |
-| **Public Cluster** | **Backend Cluster** | ❌ **BLOCKED** | **DenyInterClusterCommunication** | **500** |
-| **Backend Cluster** | **Public Cluster** | ❌ **BLOCKED** | **DenyInterClusterCommunication** | **500** |
+| Ingress (AGW) | Private Cluster | ✅ HTTP/S 80,443 | AllowClusterSubnets | 1000 |
+| **Public Cluster** | **Private Cluster** | ❌ **BLOCKED** | **DenyInterClusterCommunication** | **500** |
+| **Private Cluster** | **Public Cluster** | ❌ **BLOCKED** | **DenyInterClusterCommunication** | **500** |
 | Any Cluster | Private Endpoints | ✅ TCP 443,1433,5432 | AllowPrivateEndpoints | 1000 |
 | API Server | Cluster Nodes | ✅ TCP 443,10250 | AllowClusterSubnet | 1000 |
 | External | Private Endpoints | ❌ **BLOCKED** | DenyAllInbound | 4000 |
 
 #### 🛡️ **NSG Rules Summary**
 
-##### **Cluster Subnet NSGs** (2 NSGs: public + backend)
+##### **Cluster Subnet NSGs** (2 NSGs: public + private)
 ```
 INBOUND:
 ├── 1000: Allow Application Gateway → Cluster (TCP 80,443)
 ├── 1100: Allow Azure Load Balancer → Cluster (Any)
 ├── 1200: Allow API Server → Cluster (TCP 443,10250)
-├── xxxx: Allow Public Cluster → Backend Cluster (TCP 80,443) [only in Public Cluster NSG]
+├── xxxx: Allow Public Cluster → Private Cluster (TCP 80,443) [only in Public Cluster NSG]
 └── 4096: DENY ALL (Azure default)
 
 OUTBOUND:
@@ -269,7 +269,7 @@ OUTBOUND:
 
 ### Security Benefits
 
-- 🛡️ **Unidirectional Cross-Cluster Communication**: Public cluster can reach backend cluster's internal load balancer (ports 80,443), but backend cluster cannot initiate connections to public cluster
+- 🛡️ **Unidirectional Cross-Cluster Communication**: Public cluster can reach private cluster's internal load balancer (ports 80,443), but private cluster cannot initiate connections to public cluster
 - 🔒 **Private Endpoint Protection**: Only authorized subnets can access data services  
 - 🚫 **Default Deny**: Optional strict mode blocks all unauthorized outbound traffic
 - 📍 **Service Tag Precision**: Uses specific Azure service tags instead of broad internet access
@@ -299,9 +299,9 @@ flowchart LR
         NGINX_PUB["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.public.nginx_internal_ip"]
       end
 
-      subgraph SNET_BACK["Subnet: snet-backend-${environment}-${location_code}-001\n(10.240.4.0/24)"]
-        AKS_BACK["AKS Cluster: aks-${environment}-${project}-backend-${location_code}-001\n- CNI Overlay + Cilium\n- OIDC & Workload Identity\n- Outbound: loadBalancer"]
-        NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.backend.nginx_internal_ip"]
+      subgraph SNET_BACK["Subnet: snet-private-${environment}-${location_code}-001\n(10.240.4.0/24)"]
+        AKS_BACK["AKS Cluster: aks-${environment}-${project}-private-${location_code}-001\n- CNI Overlay + Cilium\n- OIDC & Workload Identity\n- Outbound: loadBalancer"]
+        NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.private.nginx_internal_ip"]
       end
 
       subgraph SNET_PE["Subnet: snet-pe-${environment}-${location_code}-001\n(10.240.3.0/24)"]
@@ -341,7 +341,7 @@ flowchart LR
 
     %% Identities & RBAC
     ID_PUB["UAMI: id-workload-public-${environment}-${location_code}-001"]
-    ID_BACK["UAMI: id-workload-backend-${environment}-${location_code}-001"]
+    ID_BACK["UAMI: id-workload-private-${environment}-${location_code}-001"]
     ID_SQL_APP["UAMI: id-sql-app-${environment}-${location_code}-001"]
 
   end
@@ -420,7 +420,7 @@ flowchart LR
 ```
 
 ### What’s shown
-- Per Terraform: VNet and subnets for App Gateway, AKS clusters (public/backend), Azure Firewall, and Private Endpoints
+- Per Terraform: VNet and subnets for App Gateway, AKS clusters (public/private), Azure Firewall, and Private Endpoints
 - Ingress path: Internet → App Gateway (WAF) → NGINX Ingress (internal IP) → AKS pods
 - Egress path: AKS nodes → Azure Firewall → Internet (policy-based; UDR association optional)
 - Private endpoints for Key Vault, Storage (blob/file), and SQL Server, with Private DNS zones linked to the VNet

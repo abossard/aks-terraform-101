@@ -9,8 +9,8 @@
 # Application specific setup (for each)
 - [✅] Should every cluster have it's own private link subnet? No
 - [✅] Applications always belong to ONE cluster. And should only had WI federation to a service account in that cluster.
-- [ ] Each application should have it's own WAF policy
-    - [ ] Attached to the HTTP Listenever of the application gateway
+- [✅] Each application should have it's own WAF policy
+    - [✅] Attached to the HTTP Listenever of the application gateway
 - [✅] What is in the application config? 
       - name
 - [ ] What is create per application

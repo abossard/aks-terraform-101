@@ -47,27 +47,11 @@ resource "azurerm_web_application_firewall_policy" "main" {
     max_request_body_size_in_kb = 128
   }
 
-  # OWASP Managed Rules
+  # BotManager Managed Rules
   managed_rules {
     managed_rule_set {
-      type    = "OWASP"
-      version = "3.2"
-
-      # Allow API JSON payloads (common exclusions for APIs)
-      rule_group_override {
-        rule_group_name = "REQUEST-920-PROTOCOL-ENFORCEMENT"
-
-        rule {
-          id      = "920300"
-          enabled = false # Request Missing an Accept Header
-        }
-
-        rule {
-          id      = "920330"
-          enabled = false # Empty User Agent Header
-        }
-      }
+      type    = "Microsoft_BotManagerRuleSet"
+      version = "1.1"
     }
   }
-
 }

@@ -21,7 +21,7 @@ resource "random_string" "app1_storage_suffix" {
 
 resource "azurerm_storage_account" "app1" {
   name                     = local.app1_storage_name
-  resource_group_name      = azurerm_resource_group.main.name
+  resource_group_name      = azurerm_resource_group.app["app1"].name
   location                 = azurerm_resource_group.main.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
@@ -53,4 +53,29 @@ resource "azurerm_role_assignment" "app1_blob_contributor" {
   principal_id                     = local.app_identities["app1"].principal_id
   principal_type                   = "ServicePrincipal"
   skip_service_principal_aad_check = true
+}
+
+
+resource "azurerm_web_application_firewall_policy" "app1" {
+  name                = "waf-policy-${var.environment}-${var.location_code}-app1-001"
+  resource_group_name = azurerm_resource_group.app["app1"].name
+  location            = azurerm_resource_group.app["app1"].location
+
+  # Custom rule: Block API access from external IPs
+    # Allow all other traffic (public app access)
+  policy_settings {
+    enabled                     = true
+    mode                        = var.firewall_enforcement_enabled ? "Prevention" : "Detection"
+    request_body_check          = true
+    file_upload_limit_in_mb     = 100
+    max_request_body_size_in_kb = 128
+  }
+
+  # OWASP Managed Rules
+  managed_rules {
+    managed_rule_set {
+      type    = "OWASP"
+      version = "3.2"
+    }
+  }
 }

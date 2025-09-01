@@ -167,9 +167,9 @@ resource "azurerm_network_security_group" "clusters" {
     destination_address_prefix = each.value.subnet_cidr
   }
 
-  # Allow inbound from public cluster to backend cluster (ports 80, 443)
+  # Allow inbound from public cluster to private cluster (ports 80, 443)
   dynamic "security_rule" {
-    for_each = each.key == "backend" ? [1] : []
+    for_each = each.key == "private" ? [1] : []
     content {
       name                       = "AllowPublicClusterInbound"
       priority                   = 1300
@@ -184,11 +184,11 @@ resource "azurerm_network_security_group" "clusters" {
   }
 
   # OUTBOUND RULES (CLUSTER-SPECIFIC)
-  # Allow public cluster → backend cluster (ports 80, 443)
+  # Allow public cluster → private cluster (ports 80, 443)
   dynamic "security_rule" {
     for_each = each.key == "public" ? [1] : []
     content {
-      name                       = "AllowPublicToBackendCluster"
+      name                       = "AllowPublicToPrivateCluster"
       priority                   = 400
       direction                  = "Outbound"
       access                     = "Allow"
@@ -196,15 +196,15 @@ resource "azurerm_network_security_group" "clusters" {
       source_port_range          = "*"
       destination_port_ranges    = ["80", "443"]
       source_address_prefix      = each.value.subnet_cidr
-      destination_address_prefix = var.clusters["backend"].subnet_cidr
+      destination_address_prefix = var.clusters["private"].subnet_cidr
     }
   }
 
-  # DENY backend cluster → public cluster (all traffic)
+  # DENY private cluster → public cluster (all traffic)
   dynamic "security_rule" {
-    for_each = each.key == "backend" ? [1] : []
+    for_each = each.key == "private" ? [1] : []
     content {
-      name                       = "DenyBackendToPublicCluster"
+      name                       = "DenyPrivateToPublicCluster"
       priority                   = 400
       direction                  = "Outbound"
       access                     = "Deny"
@@ -220,7 +220,7 @@ resource "azurerm_network_security_group" "clusters" {
   dynamic "security_rule" {
     for_each = [
       for k, v in var.clusters : v
-      if k != each.key && !(each.key == "public" && k == "backend")
+      if k != each.key && !(each.key == "public" && k == "private")
     ]
     content {
       name                       = "DenyOtherInterClusterCommunication"
