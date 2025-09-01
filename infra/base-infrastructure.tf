@@ -344,22 +344,6 @@ resource "azurerm_network_security_group" "app_gateway" {
     destination_address_prefixes = [for k, v in var.clusters : v.subnet_cidr]
   }
 
-  # Allow outbound to Azure services (certificate management)
-  security_rule {
-    name                   = "AllowAzureServices"
-    priority               = 1200
-    direction              = "Outbound"
-    access                 = "Allow"
-    protocol               = "Tcp"
-    source_port_range      = "*"
-    destination_port_range = "443"
-    source_address_prefix  = local.app_gateway_subnet_cidr
-    destination_address_prefixes = [
-      "AzureActiveDirectory",
-      "AzureKeyVault.${var.location}"
-    ]
-  }
-
   # Allow outbound to hub VNet (when peering enabled)
   dynamic "security_rule" {
     for_each = var.enable_vnet_peering && var.hub_vnet_config != null ? [1] : []

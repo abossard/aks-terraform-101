@@ -171,7 +171,7 @@ resource "azurerm_application_gateway" "main" {
     http_listener_name         = "backend-api-listener"
     backend_address_pool_name  = "public-backend-pool"
     backend_http_settings_name = "public-backend-settings"
-    priority                   = 200
+    priority                   = 300
   }
 
   autoscale_configuration {
