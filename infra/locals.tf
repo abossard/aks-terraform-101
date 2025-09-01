@@ -168,6 +168,11 @@ locals {
     }
   }
 
+  # VNet Peering
+  vnet_peering_enabled = var.enable_vnet_peering && var.hub_vnet_config != null
+  vnet_peering_name    = var.vnet_peering_name != null ? var.vnet_peering_name : "peer-${local.vnet_name}-to-${var.hub_vnet_config != null ? var.hub_vnet_config.vnet_name : "unknown"}"
+  hub_vnet_resource_id = var.hub_vnet_config != null ? "/subscriptions/${var.hub_vnet_config.subscription_id}/resourceGroups/${var.hub_vnet_config.resource_group}/providers/Microsoft.Network/virtualNetworks/${var.hub_vnet_config.vnet_name}" : null
+
   # Common tags (stable; avoid time-based or conflicting keys)
   # - Use var.tags as the source of truth for Environment/Project/Location
   # - Add only deterministic computed tags here

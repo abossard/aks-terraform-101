@@ -44,6 +44,17 @@ enable_api_server_vnet_integration = false
 # Firewall Configuration
 firewall_enforcement_enabled = false  # true for enforcement, false for audit-only (default)
 
+# VNet Peering Configuration (optional)
+enable_vnet_peering = false
+# hub_vnet_config = {
+#   subscription_id       = "00000000-0000-0000-0000-000000000000"
+#   resource_group        = "rg-hub-prod-eus-001"
+#   vnet_name            = "vnet-hub-prod-eus-001"
+#   allow_gateway_transit = false
+#   use_remote_gateways   = false
+# }
+# vnet_peering_name = "peer-spoke-to-hub"
+
 # Tags
 tags = {
   ManagedBy   = "terraform"

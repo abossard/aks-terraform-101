@@ -216,6 +216,35 @@ variable "route_egress_through_firewall" {
   }
 }
 
+# VNet Peering Configuration
+variable "enable_vnet_peering" {
+  description = "Enable VNet peering with hub network"
+  type        = bool
+  default     = false
+}
+
+variable "hub_vnet_config" {
+  description = "Hub VNet configuration for peering"
+  type = object({
+    subscription_id       = string
+    resource_group        = string
+    vnet_name             = string
+    allow_gateway_transit = optional(bool, false)
+    use_remote_gateways   = optional(bool, false)
+  })
+  default = null
+  validation {
+    condition     = var.enable_vnet_peering == false || (var.enable_vnet_peering == true && var.hub_vnet_config != null)
+    error_message = "hub_vnet_config must be provided when enable_vnet_peering is true."
+  }
+}
+
+variable "vnet_peering_name" {
+  description = "Name for the VNet peering connection"
+  type        = string
+  default     = null
+}
+
 # Tags
 variable "tags" {
   description = "Tags to apply to all resources"

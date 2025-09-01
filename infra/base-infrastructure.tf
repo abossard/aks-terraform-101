@@ -292,17 +292,19 @@ resource "azurerm_subnet_network_security_group_association" "private_endpoints"
 }
 
 resource "azurerm_virtual_network_peering" "netpeer" {
+  count = local.vnet_peering_enabled ? 1 : 0
+
   allow_forwarded_traffic                = true
-  allow_gateway_transit                  = false
+  allow_gateway_transit                  = var.hub_vnet_config.allow_gateway_transit
   allow_virtual_network_access           = true
   local_subnet_names                     = []
-  name                                   = "peer-vnet-else-hub-prd-gwc-001"
+  name                                   = local.vnet_peering_name
   only_ipv6_peering_enabled              = false
   peer_complete_virtual_networks_enabled = true
   remote_subnet_names                    = []
-  remote_virtual_network_id              = "/subscriptions/29977929-2412-48ea-88ec-71d0d1414410/resourceGroups/rg-else-hub-prd-gwc-001/providers/Microsoft.Network/virtualNetworks/vnet-else-hub-prd-gwc-001"
+  remote_virtual_network_id              = local.hub_vnet_resource_id
   resource_group_name                    = azurerm_resource_group.main.name
-  use_remote_gateways                    = false
+  use_remote_gateways                    = var.hub_vnet_config.use_remote_gateways
   virtual_network_name                   = azurerm_virtual_network.main.name
   depends_on = [
     azurerm_virtual_network.main,
