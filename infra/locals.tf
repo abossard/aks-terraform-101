@@ -9,6 +9,9 @@ locals {
   # Dedicated shared SQL resource group name (single RG for all SQL assets)
   sql_shared_resource_group_name = "rg-${var.environment}-${var.project}-sql-${var.location_code}-001"
 
+  mssql_allowed_ip_start = var.mssql_allowed_ip_start != "" ? var.mssql_allowed_ip_start : chomp(data.http.myip.response_body)
+  mssql_allowed_ip_end   = var.mssql_allowed_ip_end != "" ? var.mssql_allowed_ip_end : chomp(data.http.myip.response_body)
+
   # Networking
   vnet_name                     = "vnet-${local.base_name}-001"
   app_gateway_subnet_name       = "snet-agw-${var.environment}-${var.location_code}-001"

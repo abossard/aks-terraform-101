@@ -145,10 +145,8 @@ resource "azurerm_private_endpoint" "storage" {
 resource "azurerm_mssql_firewall_rule" "client_ip" {
   name             = "AllowCurrentClientIP"
   server_id        = azurerm_mssql_server.main.id
-  start_ip_address = "147.161.248.127"
-  # start_ip_address = chomp(data.http.myip.response_body)
-  end_ip_address = "147.161.248.127"
-  # end_ip_address   = chomp(data.http.myip.response_body)
+  start_ip_address = local.mssql_allowed_ip_start
+  end_ip_address   = local.mssql_allowed_ip_end
 }
 
 # # Azure Firewall Public IP

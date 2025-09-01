@@ -83,7 +83,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     mode = "Istio"
     internal_ingress_gateway_enabled = true
     external_ingress_gateway_enabled = true
-    revisions = []
+    revisions = ["asm-1-26"]
   }
 
   network_profile {

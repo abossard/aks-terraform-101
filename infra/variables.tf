@@ -267,4 +267,16 @@ variable "tags" {
   }
 }
 
+variable "mssql_allowed_ip_start" {
+  description = "List of allowed IP addresses for SQL Database access"
+  type        = string
+  default     = "147.161.248.127"
+}
+
+variable "mssql_allowed_ip_end" {
+  description = "List of allowed IP addresses for SQL Database access"
+  type        = string
+  default     = "147.161.248.127"
+}
+
 ## Note: Applications are now defined per cluster (see variable "clusters").

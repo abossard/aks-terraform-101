@@ -432,24 +432,6 @@ resource "azurerm_network_security_group" "private_endpoints" {
     destination_address_prefix = "*"
   }
 
-  # OUTBOUND RULES (ALWAYS THE SAME)
-  # Allow outbound to Azure services
-  security_rule {
-    name                    = "AllowAzureServices"
-    priority                = 1000
-    direction               = "Outbound"
-    access                  = "Allow"
-    protocol                = "Tcp"
-    source_port_range       = "*"
-    destination_port_ranges = ["443", "1433", "5432"]
-    source_address_prefix   = local.pe_subnet_cidr
-    destination_address_prefixes = [
-      "Storage.${var.location}",
-      "Sql.${var.location}",
-      "AzureKeyVault.${var.location}"
-    ]
-  }
-
   # Allow outbound to hub VNet (when peering enabled)
   dynamic "security_rule" {
     for_each = var.enable_vnet_peering && var.hub_vnet_config != null ? [1] : []
