@@ -71,13 +71,14 @@ resource "azurerm_application_gateway" "main" {
 
   # HTTP settings for public cluster
   backend_http_settings {
-    name                  = "public-backend-settings"
+    name                  = "app1-frontend-http-settings"
     cookie_based_affinity = "Disabled"
     path                  = "/"
     port                  = 80
     protocol              = "Http"
     request_timeout       = 60
     probe_name            = "public-health-probe"
+    host_name             = "app1.yourdomain.com"
 
     connection_draining {
       enabled           = true
@@ -85,18 +86,33 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
+backend_http_settings {
+    name                  = "app1-api-http-settings"
+    cookie_based_affinity = "Disabled"
+    path                  = "/"
+    port                  = 80
+    protocol              = "Http"
+    request_timeout       = 60
+    probe_name            = "public-health-probe"
+    host_name             = "app1.api.yourdomain.com"
+
+    connection_draining {
+      enabled           = true
+      drain_timeout_sec = 300
+    }
+  }
 
   # Health probes for both clusters
   probe {
     name                = "public-health-probe"
     protocol            = "Http"
-    path                = "/healthz"
+    path                = "/"
     host                = local.cluster_configs["public"].nginx_internal_ip
     port                = 80
     interval            = 30
     timeout             = 20
     unhealthy_threshold = 3
-
+    pick_host_name_from_backend_http_settings = true
     match {
       status_code = ["200"]
     }
