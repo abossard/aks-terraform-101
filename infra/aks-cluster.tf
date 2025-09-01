@@ -79,6 +79,13 @@ resource "azurerm_kubernetes_cluster" "main" {
     }
   }
 
+  service_mesh_profile {
+    mode = "Istio"
+    internal_ingress_gateway_enabled = true
+    external_ingress_gateway_enabled = true
+    revisions = []
+  }
+
   network_profile {
     network_plugin      = "azure"
     network_plugin_mode = "overlay"
@@ -128,11 +135,6 @@ resource "azurerm_kubernetes_cluster" "main" {
     day_of_week = "Sunday"
     start_time  = "00:00"
     utc_offset  = "+00:00"
-  }
-
-  # Web Application Routing addon (managed NGINX ingress)
-  web_app_routing {
-    dns_zone_ids = [] # No automatic DNS management (App Gateway handles DNS)
   }
 
   # Azure Managed Prometheus monitoring
