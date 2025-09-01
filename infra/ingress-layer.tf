@@ -107,7 +107,6 @@ backend_http_settings {
     name                = "public-health-probe"
     protocol            = "Http"
     path                = "/"
-    host                = local.cluster_configs["public"].nginx_internal_ip
     port                = 80
     interval            = 30
     timeout             = 20
@@ -133,7 +132,7 @@ backend_http_settings {
     frontend_port_name             = "port_443"
     protocol                       = "Https"
     ssl_certificate_name           = "wildcard-ssl-cert"
-    host_name                      = "app.yourdomain.com"
+    host_name                      = "app1.yourdomain.com"
     firewall_policy_id = azurerm_web_application_firewall_policy.app1.id
   }
 
@@ -143,7 +142,7 @@ backend_http_settings {
     frontend_port_name             = "port_443"
     protocol                       = "Https"
     ssl_certificate_name           = "wildcard-ssl-cert"
-    host_name                      = "api.yourdomain.com"
+    host_name                      = "app1.api.yourdomain.com"
     firewall_policy_id = azurerm_web_application_firewall_policy.app2.id
   }
 
@@ -177,7 +176,7 @@ backend_http_settings {
     rule_type                  = "Basic"
     http_listener_name         = "public-app-listener"
     backend_address_pool_name  = "public-backend-pool"
-    backend_http_settings_name = "public-backend-settings"
+    backend_http_settings_name = "app1-frontend-http-settings"
     priority                   = 200
   }
 
@@ -186,7 +185,7 @@ backend_http_settings {
     rule_type                  = "Basic"
     http_listener_name         = "backend-api-listener"
     backend_address_pool_name  = "public-backend-pool"
-    backend_http_settings_name = "public-backend-settings"
+    backend_http_settings_name = "app1-api-http-settings"
     priority                   = 300
   }
 
@@ -202,12 +201,4 @@ backend_http_settings {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.app_gateway.id]
   }
-
-  # Implicit dependency through SSL certificate reference
 }
-
-# Kubernetes resources removed - deploy manually after infrastructure
-# Use the following commands after infrastructure deployment:
-# 1. helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-# 2. helm install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
-# 3. Deploy sample applications and configure ingress resources

@@ -49,4 +49,26 @@ kubectl get pods -n kube-system -o wide | head -n 50 || true
 echo "[INFO] Node status:"
 kubectl get nodes -o wide || true
 
+
+echo "[INFO] Patching aks-istio-ingressgateway-internal service for internal Azure Load Balancer"
+kubectl -n aks-istio-ingress patch svc aks-istio-ingressgateway-internal \
+  --type merge -p '{
+    "metadata": {
+      "annotations": {
+        "service.beta.kubernetes.io/azure-load-balancer-internal": "true",
+        "service.beta.kubernetes.io/azure-load-balancer-internal-subnet": "${subnet_name}",
+        "service.beta.kubernetes.io/azure-load-balancer-ipv4": "${internal_ip}"
+      }
+    }
+  }' || {
+    echo "[WARN] Failed to patch aks-istio-ingressgateway-internal service." >&2
+  }
+
+
+echo "[INFO] Creating wildcard certificate secret in namespace: aks-istio-ingress"
+./istio-wildcard-cert.sh \
+  --base-domain yourdomain.com \
+  --namespace aks-istio-ingress \
+  --secret-name istio-wildcard-cert
+
 echo "[DONE] Cluster ${cluster_name} checks complete."

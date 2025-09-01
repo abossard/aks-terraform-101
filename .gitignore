@@ -496,3 +496,4 @@ infra/cheatsheets/generated/
 diagram.drawio
 infra/tfplan
 .temp/
+infra/scripts/cert-artifacts
