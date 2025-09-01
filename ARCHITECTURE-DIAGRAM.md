@@ -86,9 +86,11 @@ flowchart LR
   NGINX_PUB --> AKS_PUB
   NGINX_BACK --> AKS_BACK
 
+  %% Inter-cluster Communication (Unidirectional)
+  AKS_PUB -->|"✅ ALLOWED\nTCP 80,443\nNSG: AllowPublicToBackendCluster\nPriority: 400"| AKS_BACK
+
   %% Blocked Traffic flows (Red - Security Boundaries)
-  SNET_PUB -.->|"❌ BLOCKED\nNSG: DenyInterClusterCommunication\nPriority: 500"| SNET_BACK
-  SNET_BACK -.->|"❌ BLOCKED\nNSG: DenyInterClusterCommunication\nPriority: 500"| SNET_PUB
+  SNET_BACK -.->|"❌ BLOCKED\nNSG: DenyBackendToPublicCluster\nPriority: 400"| SNET_PUB
 
   %% Allowed Private Endpoint Access (Blue - Data Plane)
   AKS_PUB -->|"✅ TCP 443,1433,5432\nNSG: AllowPrivateEndpoints"| PE_KV
@@ -194,6 +196,7 @@ INBOUND:
 ├── 1000: Allow Application Gateway → Cluster (TCP 80,443)
 ├── 1100: Allow Azure Load Balancer → Cluster (Any)
 ├── 1200: Allow API Server → Cluster (TCP 443,10250)
+├── xxxx: Allow Public Cluster → Backend Cluster (TCP 80,443) [only in Public Cluster NSG]
 └── 4096: DENY ALL (Azure default)
 
 OUTBOUND:
@@ -266,8 +269,8 @@ OUTBOUND:
 
 ### Security Benefits
 
-- 🛡️ **Inter-Cluster Isolation**: Public and backend clusters cannot communicate directly
-- 🔒 **Private Endpoint Protection**: Only authorized subnets can access data services
+- 🛡️ **Unidirectional Cross-Cluster Communication**: Public cluster can reach backend cluster's internal load balancer (ports 80,443), but backend cluster cannot initiate connections to public cluster
+- 🔒 **Private Endpoint Protection**: Only authorized subnets can access data services  
 - 🚫 **Default Deny**: Optional strict mode blocks all unauthorized outbound traffic
 - 📍 **Service Tag Precision**: Uses specific Azure service tags instead of broad internet access
 - 🎯 **Configurable Security**: Can start permissive and tighten gradually

@@ -167,20 +167,72 @@ resource "azurerm_network_security_group" "clusters" {
     destination_address_prefix = each.value.subnet_cidr
   }
 
-  # OUTBOUND RULES (ALWAYS THE SAME)
-  # DENY inter-cluster communication (highest priority)
-  security_rule {
-    name                     = "DenyInterClusterCommunication"
-    priority                 = 500
-    direction                = "Outbound"
-    access                   = "Deny"
-    protocol                 = "*"
-    source_port_range        = "*"
-    destination_port_range   = "*"
-    source_address_prefix    = each.value.subnet_cidr
-    destination_address_prefixes = [
-      for k, v in var.clusters : v.subnet_cidr if k != each.key
+  # Allow inbound from public cluster to backend cluster (ports 80, 443)
+  dynamic "security_rule" {
+    for_each = each.key == "backend" ? [1] : []
+    content {
+      name                       = "AllowPublicClusterInbound"
+      priority                   = 1300
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_ranges    = ["80", "443"]
+      source_address_prefix      = var.clusters["public"].subnet_cidr
+      destination_address_prefix = each.value.subnet_cidr
+    }
+  }
+
+  # OUTBOUND RULES (CLUSTER-SPECIFIC)
+  # Allow public cluster → backend cluster (ports 80, 443)
+  dynamic "security_rule" {
+    for_each = each.key == "public" ? [1] : []
+    content {
+      name                       = "AllowPublicToBackendCluster"
+      priority                   = 400
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_ranges    = ["80", "443"]
+      source_address_prefix      = each.value.subnet_cidr
+      destination_address_prefix = var.clusters["backend"].subnet_cidr
+    }
+  }
+
+  # DENY backend cluster → public cluster (all traffic)
+  dynamic "security_rule" {
+    for_each = each.key == "backend" ? [1] : []
+    content {
+      name                       = "DenyBackendToPublicCluster"
+      priority                   = 400
+      direction                  = "Outbound"
+      access                     = "Deny"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = each.value.subnet_cidr
+      destination_address_prefix = var.clusters["public"].subnet_cidr
+    }
+  }
+
+  # DENY other inter-cluster communication (fallback for any other cluster combinations)
+  dynamic "security_rule" {
+    for_each = [
+      for k, v in var.clusters : v
+      if k != each.key && !(each.key == "public" && k == "backend")
     ]
+    content {
+      name                       = "DenyOtherInterClusterCommunication"
+      priority                   = 500
+      direction                  = "Outbound"
+      access                     = "Deny"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = each.value.subnet_cidr
+      destination_address_prefix = security_rule.value.subnet_cidr
+    }
   }
 
   # Allow outbound to private endpoints
@@ -281,27 +333,27 @@ resource "azurerm_network_security_group" "app_gateway" {
   # OUTBOUND RULES (ALWAYS THE SAME)
   # Allow outbound to cluster subnets
   security_rule {
-    name                     = "AllowClusterSubnets"
-    priority                 = 1000
-    direction                = "Outbound"
-    access                   = "Allow"
-    protocol                 = "Tcp"
-    source_port_range        = "*"
-    destination_port_ranges  = ["80", "443"]
-    source_address_prefix    = local.app_gateway_subnet_cidr
+    name                         = "AllowClusterSubnets"
+    priority                     = 1000
+    direction                    = "Outbound"
+    access                       = "Allow"
+    protocol                     = "Tcp"
+    source_port_range            = "*"
+    destination_port_ranges      = ["80", "443"]
+    source_address_prefix        = local.app_gateway_subnet_cidr
     destination_address_prefixes = [for k, v in var.clusters : v.subnet_cidr]
   }
 
   # Allow outbound to Azure services (certificate management)
   security_rule {
-    name                       = "AllowAzureServices"
-    priority                   = 1200
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = local.app_gateway_subnet_cidr
+    name                   = "AllowAzureServices"
+    priority               = 1200
+    direction              = "Outbound"
+    access                 = "Allow"
+    protocol               = "Tcp"
+    source_port_range      = "*"
+    destination_port_range = "443"
+    source_address_prefix  = local.app_gateway_subnet_cidr
     destination_address_prefixes = [
       "AzureActiveDirectory",
       "AzureKeyVault.${var.location}"
@@ -353,14 +405,14 @@ resource "azurerm_network_security_group" "private_endpoints" {
   # INBOUND RULES
   # Allow inbound from VNet subnets to private endpoints
   security_rule {
-    name                     = "AllowVNetToPE"
-    priority                 = 1000
-    direction                = "Inbound"
-    access                   = "Allow"
-    protocol                 = "Tcp"
-    source_port_range        = "*"
-    destination_port_ranges  = ["443", "1433", "5432", "3306"]
-    source_address_prefixes  = concat(
+    name                    = "AllowVNetToPE"
+    priority                = 1000
+    direction               = "Inbound"
+    access                  = "Allow"
+    protocol                = "Tcp"
+    source_port_range       = "*"
+    destination_port_ranges = ["443", "1433", "5432", "3306"]
+    source_address_prefixes = concat(
       [for k, v in var.clusters : v.subnet_cidr],
       [local.app_gateway_subnet_cidr]
     )
@@ -383,14 +435,14 @@ resource "azurerm_network_security_group" "private_endpoints" {
   # OUTBOUND RULES (ALWAYS THE SAME)
   # Allow outbound to Azure services
   security_rule {
-    name                       = "AllowAzureServices"
-    priority                   = 1000
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_ranges    = ["443", "1433", "5432"]
-    source_address_prefix      = local.pe_subnet_cidr
+    name                    = "AllowAzureServices"
+    priority                = 1000
+    direction               = "Outbound"
+    access                  = "Allow"
+    protocol                = "Tcp"
+    source_port_range       = "*"
+    destination_port_ranges = ["443", "1433", "5432"]
+    source_address_prefix   = local.pe_subnet_cidr
     destination_address_prefixes = [
       "Storage.${var.location}",
       "Sql.${var.location}",

@@ -5,6 +5,7 @@
 - [ ] Classic VNET Hub and Spoke model
     Options:
     - [ ] Peer to existing Hub (UDR to default Gateway)
+- [✅ ] Frontend/Public Cluster can reach private/backend cluster directly without Application Gateway, e.g. directly to internal load balancer
 # Application specific setup (for each)
 - [✅] Should every cluster have it's own private link subnet? No
 - [✅] Applications always belong to ONE cluster. And should only had WI federation to a service account in that cluster.
