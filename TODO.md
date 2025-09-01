@@ -27,17 +27,18 @@
     - [✅] Move SQL Private links to the app resource group
 
 ## INGRESS
-- [ ] switch to Istio instead of nginx
+- [✅] switch to Istio instead of nginx
 
 # AKS
 ## Ingress/Istio
 - [ ] Echo Service
 - [ ] Istio Gateway/Service to Echo Service
 
-## Application Preparation
-- [ ] Namespaces
-- [ ] Default Network Policies
-- [ ] Secret Integration with Rotation
+## Network Policies
+- [ ] Andre: Default Network Policies
+- [ ] Andre: App Specific Policies
+- [ ] Andre: Prepare UDR
+- [ ] Next time: Outbound Traffic (Hub Firewall)
 
 # POLICIES
 - [ ] Cluster Internal policies
