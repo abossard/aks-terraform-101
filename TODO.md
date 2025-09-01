@@ -8,6 +8,10 @@
 - [✅] Applications always belong to ONE cluster. And should only had WI federation to a service account in that cluster.
 - [✅] What is in the application config? 
       - name
+- [ ] Classic VNET Hub and Spoke model
+    Options:
+    - [ ] Optional Hub Deployment
+    - [ ] Peer to existing Hub (UDR to default Gateway)
 - [ ] What is create per application
     - [✅] Create Key Vault for each application
     - [✅] Create SQL Database for each application with Private Endpoint
