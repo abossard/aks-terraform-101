@@ -9,7 +9,7 @@ This guide will walk you through deploying a production-ready AKS cluster follow
 **Key Features**:
 - ✅ AKS with CNI Overlay + Cilium eBPF data plane
 - ✅ Zero Trust networking (single public IP)
-- ✅ Simplified egress (no centralized firewall)
+- ✅ Optional Azure Firewall (disabled by default) for centralized egress governance
 - ✅ Private endpoints for all Azure services
 - ✅ Workload Identity for secure authentication
 - ✅ Application Gateway with WAF protection
@@ -199,7 +199,25 @@ terraform output sql_private_endpoint_private_ip
 ```
 
 ### 4. Egress
-Egress is provided via the platform load balancer SNAT (no Azure Firewall deployed).
+Default: Platform load balancer SNAT (simplest, cost‑efficient)
+
+Optional: Enable Azure Firewall for centralized logging / FQDN & port governance.
+
+Toggle variables in `terraform.tfvars`:
+```hcl
+enable_firewall               = true      # deploy firewall resources
+route_egress_through_firewall = true      # force AKS egress via UDR + outbound_type=userDefinedRouting
+firewall_enforcement_enabled  = false     # audit/allow mode only (no default deny)
+```
+Outputs to inspect:
+```bash
+terraform output firewall_name
+terraform output firewall_public_ip
+terraform output firewall_private_ip
+terraform output -json deployment_summary | jq '.firewall_mode'
+```
+Audit Mode: With `firewall_enforcement_enabled = false`, rules allow required AKS traffic; you get logs without broad deny.
+Enforcement: Set to true to add stricter DNS & (optionally extend to) deny collections (future enhancement).
 
 ## 🔧 Common Issues and Solutions
 

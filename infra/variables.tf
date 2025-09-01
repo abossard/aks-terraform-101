@@ -183,6 +183,29 @@ variable "enable_container_registry" {
   default     = true
 }
 
+# Azure Firewall Feature Flags
+variable "enable_firewall" {
+  description = "Deploy Azure Firewall (subnet, public IP, policy, firewall)."
+  type        = bool
+  default     = false
+}
+
+variable "route_egress_through_firewall" {
+  description = "Force AKS egress through Azure Firewall (requires enable_firewall = true). Sets outbound_type=userDefinedRouting and applies UDRs."
+  type        = bool
+  default     = false
+  validation {
+    condition     = !(var.route_egress_through_firewall && !var.enable_firewall)
+    error_message = "route_egress_through_firewall cannot be true if enable_firewall is false."
+  }
+}
+
+variable "firewall_enforcement_enabled" {
+  description = "If true, apply a restrictive default Azure Firewall policy (deny all except explicit allow list)."
+  type        = bool
+  default     = false
+}
+
 variable "enable_secret_rotation" {
   description = "Enable automatic secret rotation for CSI driver"
   type        = bool
@@ -206,6 +229,20 @@ variable "enable_sql_private_endpoint" {
   description = "Create a Private Endpoint for the SQL logical server."
   type        = bool
   default     = true
+}
+
+
+# Key Vault Network Access Controls
+# If true, disable public network access for per-app Key Vaults (they will rely on Private Endpoints only).
+# By default this is false, meaning public network access remains enabled (even though network_acls may still deny by default).
+variable "disable_key_vault_public_access" {
+  description = "Disable public network access for Key Vaults (set true to turn off public access)."
+  type        = bool
+  default     = false
+  validation {
+    condition     = can(var.disable_key_vault_public_access)
+    error_message = "disable_key_vault_public_access must be true or false."
+  }
 }
 
 

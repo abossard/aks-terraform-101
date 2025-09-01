@@ -68,8 +68,10 @@ resource "azurerm_key_vault" "app" {
   resource_group_name           = azurerm_resource_group.app[each.key].name
   tenant_id                     = data.azurerm_client_config.current.tenant_id
   sku_name                      = "standard"
+  # Using deprecated name until provider v5 migration: enable_rbac_authorization
   enable_rbac_authorization     = true
-  public_network_access_enabled = false
+  # Remains publicly accessible unless explicitly disabled via variable.
+  public_network_access_enabled = !var.disable_key_vault_public_access
   purge_protection_enabled      = true
   soft_delete_retention_days    = 7
 

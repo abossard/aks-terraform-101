@@ -1,0 +1,1 @@
+Notes: Azure Firewall reintroduced optionally via enable_firewall, firewall_enforcement_enabled, route_egress_through_firewall variables. Resources guarded with count; cluster subnet list used for rules.

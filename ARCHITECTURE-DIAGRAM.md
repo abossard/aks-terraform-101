@@ -1,6 +1,6 @@
 ## AKS Secure Baseline – Architecture Diagram
 
-This diagram visualizes the infrastructure defined in `infra/*.tf`: dual AKS clusters (public/backend) behind Application Gateway (WAF), private endpoints to data services, workload identities, and monitoring (Azure Firewall removed for simplified egress).
+This diagram visualizes the infrastructure defined in `infra/*.tf`: dual AKS clusters (public/backend) behind Application Gateway (WAF), private endpoints to data services, workload identities, and monitoring. Azure Firewall is now OPTIONAL (disabled by default). When enabled with routing it sits in its own subnet and user-defined routes force egress through it.
 
 ```mermaid
 %%{init: {'theme':'neutral','flowchart':{'curve':'basis'}} }%%
@@ -30,7 +30,10 @@ flowchart LR
         NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.backend.nginx_internal_ip"]
       end
 
-      %% Firewall subnet removed
+      %% Optional Firewall Subnet (shown when enable_firewall=true)
+      subgraph SNET_AFW["Subnet: ${enable_firewall ? "snet-afw-${environment}-${location_code}-001" : "(firewall disabled)"}\n(10.240.2.0/24)"]
+        AFW["Azure Firewall (optional)\nPolicy: ${enable_firewall ? local.firewall_policy_name : "n/a"}\nMode: ${enable_firewall ? local.firewall_mode : "Disabled"}"]
+      end
 
       subgraph SNET_PE["Subnet: snet-pe-${environment}-${location_code}-001\n(10.240.3.0/24)"]
         PE_KV["PE: Key Vault"]
@@ -83,9 +86,10 @@ flowchart LR
   NGINX_PUB --> AKS_PUB
   NGINX_BACK --> AKS_BACK
 
-  %% Egress now via standard SLB SNAT (no Azure Firewall)
-  AKS_PUB -. egress .-> NET
-  AKS_BACK -. egress .-> NET
+  %% Egress path (conditional)
+  %% If firewall disabled OR routing disabled -> SLB SNAT direct
+  AKS_PUB -. egress (${enable_firewall && route_egress_through_firewall ? "via Firewall" : "direct"}) .-> ${enable_firewall && route_egress_through_firewall ? "AFW" : "NET"}
+  AKS_BACK -. egress (${enable_firewall && route_egress_through_firewall ? "via Firewall" : "direct"}) .-> ${enable_firewall && route_egress_through_firewall ? "AFW" : "NET"}
 
   %% Private Endpoints to services
   PE_KV --> KV
@@ -146,7 +150,7 @@ flowchart LR
 ```
 
 ### What’s shown
-- Per Terraform: VNet and subnets for App Gateway, AKS clusters (public/backend), and Private Endpoints (Azure Firewall removed)
+- Per Terraform: VNet and subnets for App Gateway, AKS clusters (public/backend), Private Endpoints, and optional Azure Firewall subnet (created only when enable_firewall=true)
 - Ingress path: Internet → App Gateway (WAF) → NGINX Ingress (internal IP) → AKS pods
 - Egress path: AKS nodes → Standard Load Balancer SNAT → Internet
 - Private endpoints for Key Vault, Storage (blob/file), and SQL Server, with Private DNS zones linked to the VNet

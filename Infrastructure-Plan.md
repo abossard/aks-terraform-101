@@ -64,7 +64,7 @@ graph TB
             LA[Log Analytics<br/>Container Insights]
             ACR[Azure Container Registry<br/>Premium SKU<br/>Optional]
             NSG[Network Security Group<br/>AKS Subnet Rules]
-            %% (Firewall removed)
+            %% (Optional Azure Firewall subnet when enabled)
             KV[Azure Key Vault<br/>Secrets & Certificates<br/>Private Endpoint]
             SA[Azure Storage<br/>Blob/File Storage<br/>Private Endpoint]
             SQL[Azure SQL Server<br/>Database<br/>Private Endpoint]
@@ -132,7 +132,7 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 - **Internal Routing**: Traffic is routed internally to NGINX Ingress Controller (no direct internet access to AKS)
 - **eBPF Networking**: Cilium provides high-performance networking with identity-based security policies
 - **Pod Distribution**: Application pods run across auto-scaling nodes with overlay networking
-- **Egress**: Outbound traffic from nodes uses Azure load balancer SNAT directly (firewall removed)
+- **Egress**: Outbound traffic defaults to Azure load balancer SNAT (optional Azure Firewall path available)
 - **Private Services**: Key Vault, Storage, and SQL Server accessible only via private endpoints
 - **Zero Trust**: Only Application Gateway has public IP access; data services use private endpoints
 
@@ -173,7 +173,7 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 - **Application Gateway**: Layer 7 load balancer with WAF
 - **NGINX Ingress**: Internal ingress controller
 - **WAF Protection**: Web Application Firewall on gateway
-- **Egress**: Direct SNAT via Azure load balancer (firewall removed)
+- **Egress**: Direct SNAT via Azure load balancer (default). Optional Azure Firewall enforcement if enabled.
 - **Azure Key Vault**: Secure secrets and certificate management with private endpoint access
 - **Azure Storage**: Blob and file storage with private endpoint access
 - **Azure SQL Server**: Managed database service with private endpoint access
@@ -261,20 +261,20 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
    - **Subnet**: AKS subnet
    - **Public Access**: None (internal only)
 
-### (Removed) Firewall & UDR
-10-12. Azure Firewall, Firewall Policy, Route Table: Removed (direct egress design)
+### Optional Firewall & UDR
+10-12. Azure Firewall, Firewall Policy, Route Table: Created only when `enable_firewall = true`; route table + associations only when `route_egress_through_firewall = true`.
 
 ### Monitoring and Security
 13. **Log Analytics Workspace**
     - Container insights enabled
     - AKS cluster logs integration
-    - (Firewall removed) Platform egress only
+    - Platform egress only (or centralized firewall if enabled)
 
 14. **Diagnostic Settings**
     - Cluster audit logs
     - Control plane logs
     - Performance metrics
-    - (Firewall removed) No firewall diagnostics
+    - Firewall diagnostics only when firewall enabled
 
 ### Optional Components
 15. **Azure Container Registry** (if enabled)

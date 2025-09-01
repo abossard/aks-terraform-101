@@ -53,7 +53,12 @@ locals {
   app_gateway_pip_name = "pip-agw-${var.environment}-${var.location_code}-001"
   app_gateway_name     = "agw-main-${var.environment}-${var.location_code}-001"
 
-  # Azure Firewall removed (pip/name/policy/route table locals dropped)
+  # Azure Firewall (optional)
+  firewall_subnet_name = "snet-afw-${var.environment}-${var.location_code}-001"
+  firewall_pip_name    = "pip-afw-${var.environment}-${var.location_code}-001"
+  firewall_name        = "afw-${var.environment}-${var.location_code}-001"
+  firewall_policy_name = "afw-pol-${var.environment}-${var.location_code}-001"
+  firewall_rcg_name    = "afw-rcg-${var.environment}-${var.location_code}-001"
 
   # Storage (no hyphens, lowercase, alphanumeric only)
   storage_name = "st${var.environment}${var.project}${var.location_code}${random_string.unique_suffix.result}"
@@ -78,7 +83,7 @@ locals {
 
   # Subnet calculations
   app_gateway_subnet_cidr = cidrsubnet(var.vnet_address_space, 8, 1) # 10.240.1.0/24
-  # firewall_subnet_cidr removed
+  firewall_subnet_cidr = cidrsubnet(var.vnet_address_space, 8, 2) # 10.240.2.0/24
   pe_subnet_cidr          = cidrsubnet(var.vnet_address_space, 8, 3) # 10.240.3.0/24
 
   # Automatic API server subnet allocation
@@ -170,6 +175,11 @@ locals {
   common_tags = merge(var.tags, {
     DeployedBy = coalesce(var.security_email, "terraform-deployment")
   })
+
+  # Derived firewall mode label for outputs
+  firewall_mode = var.enable_firewall ? (
+    var.route_egress_through_firewall ? "FirewallEgressEnforced" : "FirewallDeployedNoRouting"
+  ) : "Disabled"
 
   # Auto-detected user information with fallbacks
   detected_user_email = coalesce(

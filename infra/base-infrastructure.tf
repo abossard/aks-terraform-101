@@ -267,3 +267,15 @@ resource "azurerm_subnet_network_security_group_association" "private_endpoints"
   subnet_id                 = azurerm_subnet.private_endpoints.id
   network_security_group_id = azurerm_network_security_group.private_endpoints.id
 }
+
+# Azure Firewall Subnet (optional)
+resource "azurerm_subnet" "firewall" {
+  count                = var.enable_firewall ? 1 : 0
+  name                 = local.firewall_subnet_name
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = [local.firewall_subnet_cidr]
+
+  # Required for Azure Firewall
+  private_endpoint_network_policies = "Enabled"
+}
