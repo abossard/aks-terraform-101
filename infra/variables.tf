@@ -128,6 +128,12 @@ variable "sql_azuread_admin_object_id" {
   }
 }
 
+variable "keyvault_administrator_principal_id" {
+  description = "Azure AD principal ID for Key Vault administrator (auto-detected from current user if not provided)"
+  type        = string
+  default     = ""
+}
+
 variable "security_email" {
   description = "Email address for security notifications (auto-detected from current user if not provided)"
   type        = string

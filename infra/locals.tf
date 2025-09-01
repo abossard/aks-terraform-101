@@ -12,6 +12,8 @@ locals {
   mssql_allowed_ip_start = var.mssql_allowed_ip_start != "" ? var.mssql_allowed_ip_start : chomp(data.http.myip.response_body)
   mssql_allowed_ip_end   = var.mssql_allowed_ip_end != "" ? var.mssql_allowed_ip_end : chomp(data.http.myip.response_body)
 
+  keyvault_administrator_principal_id = var.keyvault_administrator_principal_id != "" ? var.keyvault_administrator_principal_id : data.azurerm_client_config.current.object_id
+
   # Networking
   vnet_name                     = "vnet-${local.base_name}-001"
   app_gateway_subnet_name       = "snet-agw-${var.environment}-${var.location_code}-001"

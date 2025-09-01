@@ -52,7 +52,7 @@ resource "azurerm_key_vault" "main" {
 resource "azurerm_role_assignment" "enid_group_key_vault_admin" {
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Administrator"
-  principal_id         = "f843ac69-ed69-4081-aa65-60f6f2143e80"
+  principal_id         = local.keyvault_administrator_principal_id
 }
 
 # Wait 60 seconds for RBAC propagation before secret operations

@@ -26,6 +26,8 @@ sql_admin_username = "sqladmin"
 # Security Configuration (Auto-detected from current user)
 # security_email is auto-detected from current user
 
+keyvault_administrator_principal_id = "f843ac69-ed69-4081-aa65-60f6f2143e80"
+
 # Application Configuration
 app_namespace       = "aks-app"
 app_service_account = "workload-identity-sa"
