@@ -5,7 +5,6 @@
 Production-ready Azure Kubernetes Service (AKS) cluster deployment specification with Azure CNI Overlay, Cilium networking, Applic4. **Subnets** (dynamically calculated)
    - AKS Subnet: For cluster nodes
    - Application Gateway Subnet: For Application Gateway deployment
-   - Azure Firewall Subnet: For Azure Firewall deployment (AzureFirewallSubnet)
    - Private Endpoints Subnet: For Azure Key Vault, Storage, and SQL Server private endpoints
 
 5. **Network Security Group** Gateway with WAF, and NGINX Ingress Controller. All resource names follow Microsoft Cloud Adoption Framework (CAF) naming conventions with dynamic network address calculation.
@@ -265,46 +264,32 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
    - **Subnet**: AKS subnet
    - **Public Access**: None (internal only)
 
-### Azure Firewall Specifications
-10. **Azure Firewall**
-    - **SKU**: Standard or Premium (for TLS inspection)
-    - **Subnet**: AzureFirewallSubnet (dedicated subnet name required)
-    - **Public IP**: Dedicated public IP for outbound traffic
-    - **DNS Proxy**: Enabled for enhanced security
-    - **Threat Intelligence**: Enabled with alert and deny mode
-
-11. **Firewall Policy**
-    - **Application Rules**: FQDN-based filtering for HTTP/HTTPS
-    - **Network Rules**: IP-based filtering for non-HTTP traffic
-    - **NAT Rules**: Source NAT for outbound traffic
-    - **Rule Collections**: Organized by priority and action
-
 ### User-Defined Routes (UDR)
-12. **Route Table**
+10. **Route Table**
     - **AKS Subnet Routes**: Force egress traffic through Azure Firewall
     - **Default Route**: 0.0.0.0/0 → Azure Firewall private IP
     - **Service Endpoints**: Bypass firewall for Azure services (optional)
 
 ### Monitoring and Security
-13. **Log Analytics Workspace**
+11. **Log Analytics Workspace**
     - Container insights enabled
     - AKS cluster logs integration
     - Azure Firewall logs integration
 
-14. **Diagnostic Settings**
+12. **Diagnostic Settings**
     - Cluster audit logs
     - Control plane logs
     - Performance metrics
     - Azure Firewall logs and metrics
 
 ### Optional Components
-15. **Azure Container Registry** (if enabled)
+13. **Azure Container Registry** (if enabled)
     - Premium SKU
     - Geo-replication capability
     - Managed identity access only
 
 ### Azure Key Vault Specifications
-16. **Azure Key Vault**
+14. **Azure Key Vault**
     - **SKU**: Standard or Premium (for HSM-protected keys)
     - **Access**: Private endpoint only (no public access)
     - **RBAC**: Azure RBAC enabled for fine-grained access control
@@ -312,7 +297,7 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
     - **Integration**: Pod identity for secure access from AKS
 
 ### Azure Storage Specifications
-17. **Azure Storage Account**
+15. **Azure Storage Account**
     - **SKU**: Standard_LRS or Premium_LRS
     - **Services**: Blob storage, File shares, Queue storage
     - **Access**: Private endpoint only (no public access)
@@ -320,14 +305,14 @@ export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
     - **Integration**: CSI driver for persistent volumes
 
 ### Azure SQL Server Specifications
-18. **Azure SQL Server**
+16. **Azure SQL Server**
     - **Edition**: Standard, Premium, or Business Critical
     - **Access**: Private endpoint only (no public access)
     - **Authentication**: Azure AD authentication enabled
     - **Encryption**: Transparent Data Encryption (TDE) enabled
     - **Backup**: Automated backup with point-in-time restore
 
-19. **Private Endpoints**
+17. **Private Endpoints**
     - **Key Vault Private Endpoint**: Secure access to secrets and certificates
     - **Storage Private Endpoint**: Secure access to blob and file storage
     - **SQL Private Endpoint**: Secure database connectivity

@@ -30,11 +30,6 @@ flowchart LR
         NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.backend.nginx_internal_ip"]
       end
 
-      subgraph SNET_FW["Subnet: AzureFirewallSubnet\n(10.240.2.0/24)"]
-        FW_PIP["Public IP (Firewall)"]
-        AZFW["Azure Firewall (Standard)\nPolicy + Egress rules"]
-      end
-
       subgraph SNET_PE["Subnet: snet-pe-${environment}-${location_code}-001\n(10.240.3.0/24)"]
         PE_KV["PE: Key Vault"]
         PE_ST_BLOB["PE: Storage (blob)"]

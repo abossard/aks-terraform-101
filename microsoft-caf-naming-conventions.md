@@ -104,7 +104,6 @@ virtual_network_name = "vnet-prod-aks101-eus-001"
 # Subnets
 aks_subnet_name = "snet-aks-prod-eus-001"
 app_gateway_subnet_name = "snet-agw-prod-eus-001"
-firewall_subnet_name = "AzureFirewallSubnet"  # Fixed name required
 private_endpoints_subnet_name = "snet-pe-prod-eus-001"
 
 # Network Security Groups
