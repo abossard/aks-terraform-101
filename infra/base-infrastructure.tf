@@ -118,7 +118,7 @@ resource "azurerm_subnet" "apiserver" {
   depends_on = [azurerm_virtual_network.main]
 }
 
-# Network Security Groups for AKS Clusters
+# Network Security Groups for AKS Clusters (Secure Configuration)
 resource "azurerm_network_security_group" "clusters" {
   for_each = var.clusters
 
@@ -127,6 +127,7 @@ resource "azurerm_network_security_group" "clusters" {
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.common_tags
 
+  # INBOUND RULES
   # Allow inbound from Application Gateway
   security_rule {
     name                       = "AllowAppGatewayInbound"
@@ -140,45 +141,104 @@ resource "azurerm_network_security_group" "clusters" {
     destination_address_prefix = each.value.subnet_cidr
   }
 
+  # Allow inbound from Azure Load Balancer
+  security_rule {
+    name                       = "AllowAzureLoadBalancer"
+    priority                   = 1100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+  }
+
+  # Allow inbound from API Server subnet
+  security_rule {
+    name                       = "AllowAPIServerInbound"
+    priority                   = 1200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["443", "10250"]
+    source_address_prefix      = local.cluster_configs[each.key].apiserver_cidr
+    destination_address_prefix = each.value.subnet_cidr
+  }
+
+  # OUTBOUND RULES (ALWAYS THE SAME)
+  # DENY inter-cluster communication (highest priority)
+  security_rule {
+    name                     = "DenyInterClusterCommunication"
+    priority                 = 500
+    direction                = "Outbound"
+    access                   = "Deny"
+    protocol                 = "*"
+    source_port_range        = "*"
+    destination_port_range   = "*"
+    source_address_prefix    = each.value.subnet_cidr
+    destination_address_prefixes = [
+      for k, v in var.clusters : v.subnet_cidr if k != each.key
+    ]
+  }
+
+  # Allow outbound to private endpoints
+  security_rule {
+    name                       = "AllowPrivateEndpoints"
+    priority                   = 1000
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["443", "1433", "5432"]
+    source_address_prefix      = each.value.subnet_cidr
+    destination_address_prefix = local.pe_subnet_cidr
+  }
+
+  # Allow outbound to hub VNet (when peering enabled)
   dynamic "security_rule" {
-    for_each = { for k, v in local.common_nsg_rules : k => v if v.direction == "Inbound" && k == "allow_vnet_inbound" }
+    for_each = var.enable_vnet_peering && var.hub_vnet_config != null ? [1] : []
     content {
-      name                       = "AllowVnetInbound"
-      priority                   = security_rule.value.priority
-      direction                  = security_rule.value.direction
-      access                     = security_rule.value.access
-      protocol                   = security_rule.value.protocol
-      source_port_range          = security_rule.value.source_port_range
-      destination_port_range     = security_rule.value.destination_port_range
-      source_address_prefix      = security_rule.value.source_address_prefix
-      destination_address_prefix = security_rule.value.destination_address_prefix
+      name                       = "AllowHubVNet"
+      priority                   = 1200
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = each.value.subnet_cidr
+      destination_address_prefix = var.hub_vnet_config.vnet_cidr
     }
   }
 
+  # Explicit DENY ALL (only in strict mode)
   dynamic "security_rule" {
-    for_each = { for k, v in local.common_nsg_rules : k => v if v.direction == "Outbound" }
+    for_each = var.enable_strict_nsg_outbound_deny ? [1] : []
     content {
-      name                       = security_rule.key == "allow_internet_outbound" ? "AllowInternetOutbound" : "AllowVnetOutbound"
-      priority                   = security_rule.value.priority
-      direction                  = security_rule.value.direction
-      access                     = security_rule.value.access
-      protocol                   = security_rule.value.protocol
-      source_port_range          = security_rule.value.source_port_range
-      destination_port_range     = security_rule.value.destination_port_range
-      source_address_prefix      = security_rule.value.source_address_prefix
-      destination_address_prefix = security_rule.value.destination_address_prefix
+      name                       = "DenyAllOutbound"
+      priority                   = 4000
+      direction                  = "Outbound"
+      access                     = "Deny"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
     }
   }
+
   depends_on = [azurerm_resource_group.main]
 }
 
-# Network Security Group for Application Gateway Subnet
+# Network Security Group for Application Gateway Subnet (Secure Configuration)
 resource "azurerm_network_security_group" "app_gateway" {
   name                = local.app_gateway_nsg_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.common_tags
 
+  # INBOUND RULES
   # Allow inbound HTTP/HTTPS from internet
   security_rule {
     name                       = "AllowHttpsInbound"
@@ -189,7 +249,7 @@ resource "azurerm_network_security_group" "app_gateway" {
     source_port_range          = "*"
     destination_port_ranges    = ["80", "443"]
     source_address_prefix      = "Internet"
-    destination_address_prefix = "*"
+    destination_address_prefix = local.app_gateway_subnet_cidr
   }
 
   # Allow inbound from Gateway Manager (required for App Gateway)
@@ -205,57 +265,109 @@ resource "azurerm_network_security_group" "app_gateway" {
     destination_address_prefix = "*"
   }
 
-  # Allow outbound to AKS subnet
+  # Allow inbound from Azure Load Balancer
   security_rule {
-    name                       = "AllowAksOutbound"
-    priority                   = 1000
+    name                       = "AllowAzureLoadBalancer"
+    priority                   = 1200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+  }
+
+  # OUTBOUND RULES (ALWAYS THE SAME)
+  # Allow outbound to cluster subnets
+  security_rule {
+    name                     = "AllowClusterSubnets"
+    priority                 = 1000
+    direction                = "Outbound"
+    access                   = "Allow"
+    protocol                 = "Tcp"
+    source_port_range        = "*"
+    destination_port_ranges  = ["80", "443"]
+    source_address_prefix    = local.app_gateway_subnet_cidr
+    destination_address_prefixes = [for k, v in var.clusters : v.subnet_cidr]
+  }
+
+  # Allow outbound to Azure services (certificate management)
+  security_rule {
+    name                       = "AllowAzureServices"
+    priority                   = 1200
     direction                  = "Outbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_ranges    = ["80", "443"]
-    source_address_prefix      = "*"
-    destination_address_prefix = var.vnet_address_space # VNet address space
+    destination_port_range     = "443"
+    source_address_prefix      = local.app_gateway_subnet_cidr
+    destination_address_prefixes = [
+      "AzureActiveDirectory",
+      "AzureKeyVault.${var.location}"
+    ]
   }
 
+  # Allow outbound to hub VNet (when peering enabled)
   dynamic "security_rule" {
-    for_each = { for k, v in local.common_nsg_rules : k => v if v.direction == "Outbound" && k == "allow_internet_outbound" }
+    for_each = var.enable_vnet_peering && var.hub_vnet_config != null ? [1] : []
     content {
-      name                       = "AllowInternetOutbound"
-      priority                   = 1100
-      direction                  = security_rule.value.direction
-      access                     = security_rule.value.access
-      protocol                   = security_rule.value.protocol
-      source_port_range          = security_rule.value.source_port_range
-      destination_port_range     = security_rule.value.destination_port_range
-      source_address_prefix      = security_rule.value.source_address_prefix
-      destination_address_prefix = security_rule.value.destination_address_prefix
+      name                       = "AllowHubVNet"
+      priority                   = 1300
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = local.app_gateway_subnet_cidr
+      destination_address_prefix = var.hub_vnet_config.vnet_cidr
     }
   }
+
+  # Explicit DENY ALL (only in strict mode)
+  dynamic "security_rule" {
+    for_each = var.enable_strict_nsg_outbound_deny ? [1] : []
+    content {
+      name                       = "DenyAllOutbound"
+      priority                   = 4000
+      direction                  = "Outbound"
+      access                     = "Deny"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+    }
+  }
+
   depends_on = [azurerm_resource_group.main]
 }
 
-# Network Security Group for Private Endpoints Subnet
+# Network Security Group for Private Endpoints Subnet (Secure Configuration)
 resource "azurerm_network_security_group" "private_endpoints" {
   name                = local.pe_nsg_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.common_tags
 
-  # Allow inbound from VNet
+  # INBOUND RULES
+  # Allow inbound from VNet subnets to private endpoints
   security_rule {
-    name                       = "AllowVnetInbound"
-    priority                   = 1000
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_ranges    = ["443", "1433"]
-    source_address_prefix      = "VirtualNetwork"
-    destination_address_prefix = "*"
+    name                     = "AllowVNetToPE"
+    priority                 = 1000
+    direction                = "Inbound"
+    access                   = "Allow"
+    protocol                 = "Tcp"
+    source_port_range        = "*"
+    destination_port_ranges  = ["443", "1433", "5432", "3306"]
+    source_address_prefixes  = concat(
+      [for k, v in var.clusters : v.subnet_cidr],
+      [local.app_gateway_subnet_cidr]
+    )
+    destination_address_prefix = local.pe_subnet_cidr
   }
 
-  # Deny all other inbound
+  # Explicit DENY ALL inbound (always strict for private endpoints)
   security_rule {
     name                       = "DenyAllInbound"
     priority                   = 4000
@@ -267,6 +379,57 @@ resource "azurerm_network_security_group" "private_endpoints" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
+  # OUTBOUND RULES (ALWAYS THE SAME)
+  # Allow outbound to Azure services
+  security_rule {
+    name                       = "AllowAzureServices"
+    priority                   = 1000
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["443", "1433", "5432"]
+    source_address_prefix      = local.pe_subnet_cidr
+    destination_address_prefixes = [
+      "Storage.${var.location}",
+      "Sql.${var.location}",
+      "AzureKeyVault.${var.location}"
+    ]
+  }
+
+  # Allow outbound to hub VNet (when peering enabled)
+  dynamic "security_rule" {
+    for_each = var.enable_vnet_peering && var.hub_vnet_config != null ? [1] : []
+    content {
+      name                       = "AllowHubVNet"
+      priority                   = 1100
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = local.pe_subnet_cidr
+      destination_address_prefix = var.hub_vnet_config.vnet_cidr
+    }
+  }
+
+  # Explicit DENY ALL (only in strict mode)
+  dynamic "security_rule" {
+    for_each = var.enable_strict_nsg_outbound_deny ? [1] : []
+    content {
+      name                       = "DenyAllOutbound"
+      priority                   = 4000
+      direction                  = "Outbound"
+      access                     = "Deny"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+    }
+  }
+
   depends_on = [azurerm_resource_group.main]
 }
 
@@ -289,6 +452,100 @@ resource "azurerm_subnet_network_security_group_association" "private_endpoints"
   subnet_id                 = azurerm_subnet.private_endpoints.id
   network_security_group_id = azurerm_network_security_group.private_endpoints.id
   depends_on                = [azurerm_subnet.private_endpoints, azurerm_network_security_group.private_endpoints]
+}
+
+# Network Security Groups for API Server Subnets (Secure Configuration)
+resource "azurerm_network_security_group" "apiserver" {
+  for_each = var.enable_api_server_vnet_integration ? var.clusters : {}
+
+  name                = local.cluster_configs[each.key].apiserver_nsg_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.common_tags
+
+  # INBOUND RULES
+  # Allow inbound from Azure platform
+  security_rule {
+    name                       = "AllowAzurePlatform"
+    priority                   = 1000
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "AzureCloud"
+    destination_address_prefix = local.cluster_configs[each.key].apiserver_cidr
+  }
+
+  # OUTBOUND RULES (ALWAYS THE SAME)
+  # Allow outbound to corresponding cluster subnet
+  security_rule {
+    name                       = "AllowClusterSubnet"
+    priority                   = 1000
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["443", "10250"]
+    source_address_prefix      = local.cluster_configs[each.key].apiserver_cidr
+    destination_address_prefix = each.value.subnet_cidr
+  }
+
+  # Allow outbound to Azure services
+  security_rule {
+    name                       = "AllowAzureServices"
+    priority                   = 1100
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = local.cluster_configs[each.key].apiserver_cidr
+    destination_address_prefix = "AzureCloud"
+  }
+
+  # Allow outbound to hub VNet (when peering enabled)
+  dynamic "security_rule" {
+    for_each = var.enable_vnet_peering && var.hub_vnet_config != null ? [1] : []
+    content {
+      name                       = "AllowHubVNet"
+      priority                   = 1200
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = local.cluster_configs[each.key].apiserver_cidr
+      destination_address_prefix = var.hub_vnet_config.vnet_cidr
+    }
+  }
+
+  # Explicit DENY ALL (only in strict mode)
+  dynamic "security_rule" {
+    for_each = var.enable_strict_nsg_outbound_deny ? [1] : []
+    content {
+      name                       = "DenyAllOutbound"
+      priority                   = 4000
+      direction                  = "Outbound"
+      access                     = "Deny"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+    }
+  }
+
+  depends_on = [azurerm_resource_group.main]
+}
+
+# Associate NSGs with API Server Subnets
+resource "azurerm_subnet_network_security_group_association" "apiserver" {
+  for_each = var.enable_api_server_vnet_integration ? var.clusters : {}
+
+  subnet_id                 = azurerm_subnet.apiserver[each.key].id
+  network_security_group_id = azurerm_network_security_group.apiserver[each.key].id
+  depends_on                = [azurerm_subnet.apiserver, azurerm_network_security_group.apiserver]
 }
 
 resource "azurerm_virtual_network_peering" "netpeer" {

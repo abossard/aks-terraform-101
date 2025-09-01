@@ -205,6 +205,16 @@ variable "firewall_enforcement_enabled" {
   }
 }
 
+variable "enable_strict_nsg_outbound_deny" {
+  description = "Enable strict outbound deny rules in NSGs (requires hub/firewall setup)"
+  type        = bool
+  default     = false
+  validation {
+    condition     = can(var.enable_strict_nsg_outbound_deny)
+    error_message = "Strict NSG outbound deny must be true or false."
+  }
+}
+
 # Egress routing control
 variable "route_egress_through_firewall" {
   description = "Route AKS egress through Azure Firewall using UDR (true) or use load balancer SNAT (false)."
@@ -229,6 +239,7 @@ variable "hub_vnet_config" {
     subscription_id       = string
     resource_group        = string
     vnet_name             = string
+    vnet_cidr             = optional(string, "10.0.0.0/16")
     allow_gateway_transit = optional(bool, false)
     use_remote_gateways   = optional(bool, false)
   })

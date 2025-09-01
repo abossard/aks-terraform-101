@@ -84,6 +84,7 @@ hub_vnet_config = {
   subscription_id       = "29977929-2412-48ea-88ec-71d0d1414410"
   resource_group        = "rg-else-hub-prd-gwc-001"
   vnet_name             = "vnet-else-hub-prd-gwc-001"
+  vnet_cidr             = "10.0.0.0/16"
   allow_gateway_transit = false
   use_remote_gateways   = false
 }
