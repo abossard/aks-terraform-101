@@ -495,3 +495,4 @@ tfplan
 infra/cheatsheets/generated/
 diagram.drawio
 infra/tfplan
+.temp/
