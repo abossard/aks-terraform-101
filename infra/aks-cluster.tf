@@ -80,10 +80,10 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   service_mesh_profile {
-    mode = "Istio"
+    mode                             = "Istio"
     internal_ingress_gateway_enabled = true
     external_ingress_gateway_enabled = false
-    revisions = ["asm-1-26"]
+    revisions                        = ["asm-1-26"]
   }
 
   network_profile {
@@ -356,8 +356,8 @@ locals {
         nginx_manifest      = "${path.module}/k8s/generated/${k}-nginx-internal-controller.yaml",
         enable_asvni        = tostring(var.enable_api_server_vnet_integration),
         apiserver_subnet_id = var.enable_api_server_vnet_integration ? azurerm_subnet.apiserver[k].id : ""
-        internal_ip             = local.cluster_configs[k].nginx_internal_ip,
-        subnet_name             = local.cluster_configs[k].subnet_name
+        internal_ip         = local.cluster_configs[k].nginx_internal_ip,
+        subnet_name         = local.cluster_configs[k].subnet_name
       }
     )
   }

@@ -62,7 +62,7 @@ resource "azurerm_web_application_firewall_policy" "app1" {
   location            = azurerm_resource_group.app["app1"].location
 
   # Custom rule: Block API access from external IPs
-    # Allow all other traffic (public app access)
+  # Allow all other traffic (public app access)
   policy_settings {
     enabled                     = true
     mode                        = var.firewall_enforcement_enabled ? "Prevention" : "Detection"

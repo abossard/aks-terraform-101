@@ -40,7 +40,7 @@ resource "azurerm_key_vault_secret" "sql_app_identity_client_id" {
   value        = azurerm_user_assigned_identity.sql_app_identity.client_id
   key_vault_id = azurerm_key_vault.main.id
   content_type = "text/plain"
-  depends_on = [time_sleep.kv_rbac_propagation]
+  depends_on   = [time_sleep.kv_rbac_propagation]
 }
 
 # Create an updated database connection string for the application identity

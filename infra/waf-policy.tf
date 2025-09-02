@@ -50,7 +50,7 @@ resource "azurerm_web_application_firewall_policy" "main" {
   # BotManager Managed Rules
   managed_rules {
     managed_rule_set {
-      type    = "Microsoft_DefaultRuleSet"  # primary
+      type    = "Microsoft_DefaultRuleSet" # primary
       version = "2.1"
     }
     managed_rule_set {

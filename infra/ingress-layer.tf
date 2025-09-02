@@ -86,7 +86,7 @@ resource "azurerm_application_gateway" "main" {
     }
   }
 
-backend_http_settings {
+  backend_http_settings {
     name                  = "app1-api-http-settings"
     cookie_based_affinity = "Disabled"
     path                  = "/"
@@ -104,13 +104,13 @@ backend_http_settings {
 
   # Health probes for both clusters
   probe {
-    name                = "public-health-probe"
-    protocol            = "Http"
-    path                = "/"
-    port                = 80
-    interval            = 30
-    timeout             = 20
-    unhealthy_threshold = 3
+    name                                      = "public-health-probe"
+    protocol                                  = "Http"
+    path                                      = "/"
+    port                                      = 80
+    interval                                  = 30
+    timeout                                   = 20
+    unhealthy_threshold                       = 3
     pick_host_name_from_backend_http_settings = true
     match {
       status_code = ["200"]
@@ -133,7 +133,7 @@ backend_http_settings {
     protocol                       = "Https"
     ssl_certificate_name           = "wildcard-ssl-cert"
     host_name                      = "app1.yourdomain.com"
-    firewall_policy_id = azurerm_web_application_firewall_policy.app1.id
+    firewall_policy_id             = azurerm_web_application_firewall_policy.app1.id
   }
 
   http_listener {
@@ -143,7 +143,7 @@ backend_http_settings {
     protocol                       = "Https"
     ssl_certificate_name           = "wildcard-ssl-cert"
     host_name                      = "app1.api.yourdomain.com"
-    firewall_policy_id = azurerm_web_application_firewall_policy.app2.id
+    firewall_policy_id             = azurerm_web_application_firewall_policy.app2.id
   }
 
   # Wildcard SSL Certificate for both domains
