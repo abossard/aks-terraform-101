@@ -394,7 +394,7 @@ output "app_sql_connection_info" {
 output "app_kv_private_fqdns" {
   description = "Per-app Key Vault Private Endpoint FQDNs (in the privatelink zone)"
   value = {
-    for a, kv_name in local.app_kv_name_map : a => "${kv_name}.${local.private_dns_zones["key_vault"]}"
+    for a, kv_name in local.app_kv_name_map : a => "${kv_name}.${local.private_dns_zone_id["privatelink.vaultcore.azure.net"].id}"
   }
 }
 
@@ -421,15 +421,15 @@ output "service_cidr" {
 }
 
 # Security Information
-output "private_dns_zones" {
-  description = "Private DNS zones created"
-  value = {
-    key_vault    = azurerm_private_dns_zone.main["key_vault"].name
-    storage_blob = azurerm_private_dns_zone.main["storage_blob"].name
-    storage_file = azurerm_private_dns_zone.main["storage_file"].name
-    sql_database = azurerm_private_dns_zone.main["sql_database"].name
-  }
-}
+# output "private_dns_zones" {
+#   description = "Private DNS zones created"
+#   value = {
+#     key_vault    = azurerm_private_dns_zone.main["key_vault"].name
+#     storage_blob = azurerm_private_dns_zone.main["storage_blob"].name
+#     storage_file = azurerm_private_dns_zone.main["storage_file"].name
+#     sql_database = azurerm_private_dns_zone.main["sql_database"].name
+#   }
+# }
 
 # Deployment Information
 output "deployment_summary" {

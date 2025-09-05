@@ -91,3 +91,20 @@ hub_vnet_config = {
   use_remote_gateways   = false
 }
 vnet_peering_name = "peer-vnet-else-hub-prd-gwc-001"
+
+# Private DNS Link configuration
+private_dns_config = {
+  subscription_id = "29977929-2412-48ea-88ec-71d0d1414410"
+  resource_group  = "rg-else-dns-prd-gwc-001"
+  private_dns_zone_name = {
+    key_vault    = "privatelink.vaultcore.azure.net"
+    storage_blob = "privatelink.blob.core.windows.net"
+    storage_file = "privatelink.file.core.windows.net"
+    sql_database = "privatelink.database.windows.net"
+  }
+}
+
+# Define the DNS Server of the VNET
+custom_dns_servers = "192.168.0.4"
+
+# End of File

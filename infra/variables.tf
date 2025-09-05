@@ -285,4 +285,27 @@ variable "mssql_allowed_ip_end" {
   default     = "147.161.248.127"
 }
 
+# Private DNS Link configuration
+variable "private_dns_config" {
+  description = "Private DNS configuration for linking to hub network"
+  type = object({
+    subscription_id       = string
+    resource_group        = string
+    private_dns_zone_name = map(string)
+  })
+  default = null
+  validation {
+    condition     = var.private_dns_config == null || (var.private_dns_config != null && length(var.private_dns_config.private_dns_zone_name) > 0)
+    error_message = "private_dns_zone_name must contain at least one DNS zone name when private_dns_config is provided."
+  }
+
+}
+
+# DNS Server of the Vnet
+variable "custom_dns_servers" {
+  description = "List of custom DNS servers for the VNet (if empty, Azure default DNS is used)"
+  type        = string
+  default     = ""
+}
+
 ## Note: Applications are now defined per cluster (see variable "clusters").

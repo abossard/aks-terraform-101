@@ -104,12 +104,12 @@ locals {
   cluster_keys_sorted = sort(keys(var.clusters))
 
   # Private DNS zones (fixed names)
-  private_dns_zones = {
-    key_vault    = "privatelink.vaultcore.azure.net"
-    storage_blob = "privatelink.blob.core.windows.net"
-    storage_file = "privatelink.file.core.windows.net"
-    sql_database = "privatelink.database.windows.net"
-  }
+  # private_dns_zones = {
+  #   key_vault    = "privatelink.vaultcore.azure.net"
+  #   storage_blob = "privatelink.blob.core.windows.net"
+  #   storage_file = "privatelink.file.core.windows.net"
+  #   sql_database = "privatelink.database.windows.net"
+  # }
 
   # Storage endpoints configuration
   storage_endpoints = {
@@ -183,6 +183,14 @@ locals {
   vnet_peering_enabled = var.enable_vnet_peering && var.hub_vnet_config != null
   vnet_peering_name    = var.vnet_peering_name != null ? var.vnet_peering_name : "peer-${local.vnet_name}-to-${var.hub_vnet_config != null ? var.hub_vnet_config.vnet_name : "unknown"}"
   hub_vnet_resource_id = var.hub_vnet_config != null ? "/subscriptions/${var.hub_vnet_config.subscription_id}/resourceGroups/${var.hub_vnet_config.resource_group}/providers/Microsoft.Network/virtualNetworks/${var.hub_vnet_config.vnet_name}" : null
+
+  # Private DNS Configuration
+  private_dns_zone_id = {
+    for zone_name in var.private_dns_config.private_dns_zone_name : 
+    zone_name => {
+      id = "/subscriptions/${var.private_dns_config.subscription_id}/resourceGroups/${var.private_dns_config.resource_group}/providers/Microsoft.Network/privateDnsZones/${zone_name}"
+    }
+  }
 
   # Common tags (stable; avoid time-based or conflicting keys)
   # - Use var.tags as the source of truth for Environment/Project/Location

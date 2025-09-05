@@ -498,3 +498,6 @@ infra/tfplan
 .temp/
 infra/scripts/cert-artifacts
 infra/tf.plan
+infra/cert-artifacts/openssl-yourdomain_com.cnf
+infra/cert-artifacts/wildcard-yourdomain_com.crt
+infra/cert-artifacts/wildcard-yourdomain_com.key

@@ -107,11 +107,11 @@ resource "azurerm_private_endpoint" "app_kv" {
 
   private_dns_zone_group {
     name                 = "kv-${each.key}-dns-zone-group"
-    private_dns_zone_ids = [azurerm_private_dns_zone.main["key_vault"].id]
+    private_dns_zone_ids = [local.private_dns_zone_id["privatelink.vaultcore.azure.net"].id]
   }
 
   tags       = local.app_map[each.key].tags
-  depends_on = [azurerm_subnet.private_endpoints, azurerm_key_vault.app, azurerm_private_dns_zone.main["key_vault"]]
+  depends_on = [azurerm_subnet.private_endpoints, azurerm_key_vault.app]
 }
 
 # RBAC: allow each app's managed identity to read secrets from its KV
