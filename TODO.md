@@ -26,6 +26,20 @@
     - [✅] App specific resources should go into their own resource group
     - [✅] Move SQL Private links to the app resource group
 
+# Infra Miscellanous
+- [ ] move application gateway stuff and network stuff into a specific resource group
+- [ ] remove the private dns zones creation and modify the private endpoint in order to setup the private dns zone links to the existing private dns zones
+- [ ] change the configuration of the vnet in order to use the existing Firewall on the Hub as a DNS Server
+- [ ] managing the retention (short term and long term) of the SQL Server Backup
+- [ ] create backup vault if there is a storage account blob
+    - [ ] backup vault must have his managed identity activated
+    - [ ] the system managed identity of each backup vault must be applyed with a specific role on the storage account in order to permit the backup to works
+    - [ ] policy must be managable
+- [ ] add the system assign managed identity used by application gateway that must be added 
+- [ ] remove the keyvault create on the main resource group with his private endpoint
+- [ ] setup the entraID group as admin of SQL server as a variabile in input in order based on the environment. stage and prod must should have one group as admin defined, dev and test another
+
+
 ## INGRESS
 - [✅] switch to Istio instead of nginx
 
