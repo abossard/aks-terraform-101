@@ -8,11 +8,15 @@ locals {
 
   # Dedicated shared SQL resource group name (single RG for all SQL assets)
   sql_shared_resource_group_name = "rg-${var.environment}-${var.project}-sql-${var.location_code}-001"
-
+  # SQL Server Firewall Definitions
   mssql_allowed_ip_start = var.mssql_allowed_ip_start != "" ? var.mssql_allowed_ip_start : chomp(data.http.myip.response_body)
   mssql_allowed_ip_end   = var.mssql_allowed_ip_end != "" ? var.mssql_allowed_ip_end : chomp(data.http.myip.response_body)
 
-  keyvault_administrator_principal_id = var.keyvault_administrator_principal_id != "" ? var.keyvault_administrator_principal_id : data.azurerm_client_config.current.object_id
+  # Dedicated Application Gateway resource group name (single RG for all AGW assets)
+  agw_resource_group_name = "rg-${var.environment}-${var.project}-agw-${var.location_code}-001"
+
+  # Dedicated Network Components resource group name (single RG for all Network assets)
+  net_resource_group_name = "rg-${var.environment}-${var.project}-net-${var.location_code}-001"
 
   # Networking
   vnet_name                     = "vnet-${local.base_name}-001"
@@ -68,6 +72,9 @@ locals {
 
   # Key Vault (3-24 characters, alphanumeric and hyphens only)
   key_vault_name = "kv-${var.environment}${var.project}${random_string.unique_suffix.result}1"
+
+  # Key Vault Administrator
+  keyvault_administrator_principal_id = var.keyvault_administrator_principal_id != "" ? var.keyvault_administrator_principal_id : data.azurerm_client_config.current.object_id
 
   # SQL Server
   sql_server_name   = "sql-main-${var.environment}-${var.location_code}-${random_string.unique_suffix.result}"

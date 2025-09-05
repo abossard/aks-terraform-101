@@ -3,8 +3,8 @@
 
 resource "azurerm_web_application_firewall_policy" "main" {
   name                = "waf-policy-${var.environment}-${var.location_code}-001"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.agw.name
+  location            = azurerm_resource_group.agw.location
 
   # Custom rule: Block API access from external IPs
   custom_rules {

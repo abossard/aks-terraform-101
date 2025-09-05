@@ -23,6 +23,20 @@ resource "azurerm_resource_group" "sql_shared" {
   tags     = local.common_tags
 }
 
+# Application Gateway Resource Group (single RG for all AGW assets)
+resource "azurerm_resource_group" "agw" {
+  name     = local.agw_resource_group_name
+  location = var.location
+  tags     = local.common_tags
+}
+
+# Network Resource Group (single RG for all Network assets)
+resource "azurerm_resource_group" "net" {
+  name     = local.net_resource_group_name
+  location = var.location
+  tags     = local.common_tags
+}
+
 # Log Analytics Workspace (needed early for monitoring)
 resource "azurerm_log_analytics_workspace" "main" {
   name                = local.log_analytics_name
@@ -37,8 +51,8 @@ resource "azurerm_log_analytics_workspace" "main" {
 # Virtual Network
 resource "azurerm_virtual_network" "main" {
   name                = local.vnet_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.net.location
+  resource_group_name = azurerm_resource_group.net.name
   address_space       = [var.vnet_address_space]
   tags                = local.common_tags
   depends_on          = [azurerm_resource_group.main]
@@ -49,7 +63,7 @@ resource "azurerm_subnet" "clusters" {
   for_each = var.clusters
 
   name                 = local.cluster_configs[each.key].subnet_name
-  resource_group_name  = azurerm_resource_group.main.name
+  resource_group_name  = azurerm_resource_group.net.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [each.value.subnet_cidr]
 
@@ -61,7 +75,7 @@ resource "azurerm_subnet" "clusters" {
 # Application Gateway Subnet
 resource "azurerm_subnet" "app_gateway" {
   name                 = local.app_gateway_subnet_name
-  resource_group_name  = azurerm_resource_group.main.name
+  resource_group_name  = azurerm_resource_group.net.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.app_gateway_subnet_cidr]
 
@@ -85,7 +99,7 @@ resource "azurerm_subnet" "app_gateway" {
 # Private Endpoints Subnet
 resource "azurerm_subnet" "private_endpoints" {
   name                 = local.private_endpoints_subnet_name
-  resource_group_name  = azurerm_resource_group.main.name
+  resource_group_name  = azurerm_resource_group.net.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.pe_subnet_cidr]
 
@@ -99,7 +113,7 @@ resource "azurerm_subnet" "apiserver" {
   for_each = var.enable_api_server_vnet_integration ? var.clusters : {}
 
   name                 = local.cluster_configs[each.key].apiserver_subnet_name
-  resource_group_name  = azurerm_resource_group.main.name
+  resource_group_name  = azurerm_resource_group.net.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.cluster_configs[each.key].apiserver_cidr]
 
@@ -123,8 +137,8 @@ resource "azurerm_network_security_group" "clusters" {
   for_each = var.clusters
 
   name                = local.cluster_configs[each.key].nsg_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.net.location
+  resource_group_name = azurerm_resource_group.net.name
   tags                = local.common_tags
 
   # INBOUND RULES
@@ -286,8 +300,8 @@ resource "azurerm_network_security_group" "clusters" {
 # Network Security Group for Application Gateway Subnet (Secure Configuration)
 resource "azurerm_network_security_group" "app_gateway" {
   name                = local.app_gateway_nsg_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.net.location
+  resource_group_name = azurerm_resource_group.net.name
   tags                = local.common_tags
 
   # INBOUND RULES
@@ -382,8 +396,8 @@ resource "azurerm_network_security_group" "app_gateway" {
 # Network Security Group for Private Endpoints Subnet (Secure Configuration)
 resource "azurerm_network_security_group" "private_endpoints" {
   name                = local.pe_nsg_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.net.location
+  resource_group_name = azurerm_resource_group.net.name
   tags                = local.common_tags
 
   # INBOUND RULES
@@ -477,8 +491,8 @@ resource "azurerm_network_security_group" "apiserver" {
   for_each = var.enable_api_server_vnet_integration ? var.clusters : {}
 
   name                = local.cluster_configs[each.key].apiserver_nsg_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.net.location
+  resource_group_name = azurerm_resource_group.net.name
   tags                = local.common_tags
 
   # INBOUND RULES
@@ -578,7 +592,7 @@ resource "azurerm_virtual_network_peering" "netpeer" {
   peer_complete_virtual_networks_enabled = true
   remote_subnet_names                    = []
   remote_virtual_network_id              = local.hub_vnet_resource_id
-  resource_group_name                    = azurerm_resource_group.main.name
+  resource_group_name                    = azurerm_resource_group.net.name
   use_remote_gateways                    = var.hub_vnet_config.use_remote_gateways
   virtual_network_name                   = azurerm_virtual_network.main.name
   depends_on = [

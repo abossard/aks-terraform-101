@@ -4,8 +4,8 @@
 # Public IP for Application Gateway
 resource "azurerm_public_ip" "app_gateway" {
   name                = local.app_gateway_pip_name
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.agw.name
+  location            = azurerm_resource_group.agw.location
   allocation_method   = "Static"
   sku                 = "Standard"
   zones               = ["1"]
@@ -15,8 +15,8 @@ resource "azurerm_public_ip" "app_gateway" {
 # User-Assigned Managed Identity for Application Gateway
 resource "azurerm_user_assigned_identity" "app_gateway" {
   name                = "id-agw-${var.environment}-${var.location_code}-001"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.agw.location
+  resource_group_name = azurerm_resource_group.agw.name
   tags                = local.common_tags
 }
 
@@ -30,8 +30,8 @@ resource "azurerm_role_assignment" "app_gateway_key_vault" {
 # Application Gateway
 resource "azurerm_application_gateway" "main" {
   name                = local.app_gateway_name
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.agw.name
+  location            = azurerm_resource_group.agw.location
 
   # Apply WAF policy
   firewall_policy_id = azurerm_web_application_firewall_policy.main.id

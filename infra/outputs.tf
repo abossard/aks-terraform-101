@@ -22,6 +22,28 @@ output "sql_shared_resource_group_id" {
   value       = azurerm_resource_group.sql_shared.id
 }
 
+# Application Gateway Resource Group
+output "agw_shared_resource_group_name" {
+  description = "Name of the Agw resource group"
+  value       = azurerm_resource_group.agw.name
+}
+
+output "agw_shared_resource_group_id" {
+  description = "ID of the Agw resource group"
+  value       = azurerm_resource_group.agw.id
+}
+
+# Network Resource Group
+output "net_shared_resource_group_name" {
+  description = "Name of the Network resource group"
+  value       = azurerm_resource_group.net.name
+}
+
+output "net_shared_resource_group_id" {
+  description = "ID of the Network resource group"
+  value       = azurerm_resource_group.net.id
+}
+
 # Networking
 output "virtual_network_name" {
   description = "Name of the virtual network"
