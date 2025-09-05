@@ -107,4 +107,15 @@ private_dns_config = {
 # Define the DNS Server of the VNET
 custom_dns_servers = "192.168.0.4"
 
-# End of File
+# SQL Short Term Backup Internal Hours and Retention Days
+stb_backup_interval_hour = "12"
+stb_days_of_retention = "14"
+
+# SQL Long Term Backup Retention
+ltr_weekly_retention = "P2W"
+ltr_monthly_retention = "PT0S"
+ltr_yearly_retention = "PT0S"
+ltr_week_of_year = 1
+
+# SQL Immutable Backups
+ltr_immutable_backups_enabled = false

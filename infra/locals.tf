@@ -69,7 +69,7 @@ locals {
 
   # Storage (no hyphens, lowercase, alphanumeric only)
   storage_name = "st${var.environment}${var.project}${var.location_code}${random_string.unique_suffix.result}"
-
+  
   # Key Vault (3-24 characters, alphanumeric and hyphens only)
   key_vault_name = "kv-${var.environment}${var.project}${random_string.unique_suffix.result}1"
 

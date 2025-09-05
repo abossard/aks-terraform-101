@@ -1,4 +1,3 @@
-
 # SQL Server
 resource "azurerm_mssql_server" "main" {
   name                         = local.sql_server_name
@@ -10,6 +9,12 @@ resource "azurerm_mssql_server" "main" {
 
   # Enable public network access for initial deployment
   public_network_access_enabled = true
+
+  # Outbound Network Restriction Enabled
+  outbound_network_restriction_enabled = true
+
+  # Minimum TLS Version
+  minimum_tls_version = "1.2"
 
   # Azure AD authentication with auto-detected admin
   azuread_administrator {

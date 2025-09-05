@@ -303,9 +303,76 @@ variable "private_dns_config" {
 
 # DNS Server of the Vnet
 variable "custom_dns_servers" {
-  description = "List of custom DNS servers for the VNet (if empty, Azure default DNS is used)"
+  description = "List of custom DNS servers for the VNet (IPv4 addresses). Leave empty to use Azure default DNS."
   type        = string
   default     = ""
+}
+
+variable "stb_backup_interval_hour" {
+  description = "Short-term backup interval in hours for SQL Database"
+  type        = number
+  default     = 12
+  validation {
+    condition     = var.stb_backup_interval_hour == 12 || var.stb_backup_interval_hour == 24
+    error_message = "Backup interval must be between 12 or 24 hours."
+  }
+}
+
+variable "stb_days_of_retention" {
+  description = "Short-term backup retention period in days for SQL Database"
+  type        = number
+  default     = 15
+  validation {
+    condition     = var.stb_days_of_retention >= 1 && var.stb_days_of_retention <= 90
+    error_message = "Retention period must be between 1 and 90 days."
+  }
+}
+
+# Long-term backup retention variables
+variable "ltr_weekly_retention" {
+  description = "Long-term weekly backup retention period (ISO 8601 format, e.g., P4W for 4 weeks, PT0S for disabled)"
+  type        = string
+  default     = "P2W"
+  validation {
+    condition     = can(regex("^(PT0S|P([0-9]+W))$", var.ltr_weekly_retention))
+    error_message = "Weekly retention must be in ISO 8601 format (e.g., P4W for 4 weeks) or PT0S to disable."
+  }
+}
+
+variable "ltr_monthly_retention" {
+  description = "Long-term monthly backup retention period (ISO 8601 format, e.g., P12M for 12 months, PT0S for disabled)"
+  type        = string
+  default     = "PT0S"
+  validation {
+    condition     = can(regex("^(PT0S|P([0-9]+M))$", var.ltr_monthly_retention))
+    error_message = "Monthly retention must be in ISO 8601 format (e.g., P12M for 12 months) or PT0S to disable."
+  }
+}
+
+variable "ltr_yearly_retention" {
+  description = "Long-term yearly backup retention period (ISO 8601 format, e.g., P5Y for 5 years, PT0S for disabled)"
+  type        = string
+  default     = "PT0S"
+  validation {
+    condition     = can(regex("^(PT0S|P([0-9]+Y))$", var.ltr_yearly_retention))
+    error_message = "Yearly retention must be in ISO 8601 format (e.g., P5Y for 5 years) or PT0S to disable."
+  }
+}
+
+variable "ltr_week_of_year" {
+  description = "Week of the year to take the yearly backup (1-52)"
+  type        = number
+  default     = 1
+  validation {
+    condition     = var.ltr_week_of_year >= 1 && var.ltr_week_of_year <= 52
+    error_message = "Week of year must be between 1 and 52."
+  }
+}
+
+variable "ltr_immutable_backups_enabled" {
+  description = "Enable immutable backups for long-term retention"
+  type        = bool
+  default     = false
 }
 
 ## Note: Applications are now defined per cluster (see variable "clusters").

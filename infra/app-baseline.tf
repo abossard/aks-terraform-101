@@ -226,6 +226,18 @@ resource "azurerm_mssql_database" "app" {
     email_addresses = [local.detected_user_email]
   }
 
+  long_term_retention_policy {
+    immutable_backups_enabled = var.ltr_immutable_backups_enabled
+    monthly_retention         = var.ltr_monthly_retention
+    week_of_year              = var.ltr_week_of_year
+    weekly_retention          = var.ltr_weekly_retention
+    yearly_retention          = var.ltr_yearly_retention
+  }
+  short_term_retention_policy {
+    backup_interval_in_hours = var.stb_backup_interval_hour
+    retention_days           = var.stb_days_of_retention
+  }
+
   tags       = merge(local.common_tags, { App = each.key })
   depends_on = [azurerm_mssql_server.main]
 }
