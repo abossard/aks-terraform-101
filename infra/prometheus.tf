@@ -65,4 +65,3 @@ resource "azurerm_monitor_data_collection_rule_association" "prometheus_configur
   target_resource_id          = azurerm_kubernetes_cluster.main[each.key].id
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.prometheus.id
 }
-

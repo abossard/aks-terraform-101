@@ -27,17 +27,17 @@
     - [✅] Move SQL Private links to the app resource group
 
 # Infra Miscellanous
-- [ ] move application gateway stuff and network stuff into a specific resource group
-- [ ] remove the private dns zones creation and modify the private endpoint in order to setup the private dns zone links to the existing private dns zones
-- [ ] change the configuration of the vnet in order to use the existing Firewall on the Hub as a DNS Server
-- [ ] managing the retention (short term and long term) of the SQL Server Backup
+- [✅] move application gateway stuff and network stuff into a specific resource group
+- [✅] remove the private dns zones creation and modify the private endpoint in order to setup the private dns zone links to the existing private dns zones
+- [✅] change the configuration of the vnet in order to use the existing Firewall Ipv4 192.168.0.4 on the Hub as a DNS Server
+- [✅] managing the retention (short term and long term) of the SQL Server Backup
 - [ ] create backup vault if there is a storage account blob
     - [ ] backup vault must have his managed identity activated
     - [ ] the system managed identity of each backup vault must be applyed with a specific role on the storage account in order to permit the backup to works
     - [ ] policy must be managable
-- [ ] add the system assign managed identity used by application gateway that must be added 
-- [ ] remove the keyvault create on the main resource group with his private endpoint
+- [✅] add the system assign managed identity used by application gateway on the keyvault of each application as Keyvault Secret user in order to access the certificate of each app 
 - [ ] setup the entraID group as admin of SQL server as a variabile in input in order based on the environment. stage and prod must should have one group as admin defined, dev and test another
+- [ ] define variabiles for setup the resource SKU (ex: application gateway zone redundancy, storage accout SKU, backup vault sku, aks node pool number, sku and zone redundancy)
 
 
 ## INGRESS
