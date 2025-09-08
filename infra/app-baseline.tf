@@ -125,6 +125,17 @@ resource "azurerm_role_assignment" "app_kv_secrets_user" {
   depends_on         = [azurerm_key_vault.app]
 }
 
+# RBAC: allow application gateway managed identity to read certificates from application's KV
+resource "azurerm_role_assignment" "agw_kv_certificates_user" {
+  for_each = local.app_map
+
+  scope                = azurerm_key_vault.app[each.key].id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.app_gateway.principal_id
+  depends_on           = [azurerm_key_vault.app]
+}
+
+
 ########################################
 # Per-App K8s primitives (namespace/SA naming) and SA YAML rendering
 ########################################

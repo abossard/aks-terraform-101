@@ -69,7 +69,7 @@ locals {
 
   # Storage (no hyphens, lowercase, alphanumeric only)
   storage_name = "st${var.environment}${var.project}${var.location_code}${random_string.unique_suffix.result}"
-  
+
   # Key Vault (3-24 characters, alphanumeric and hyphens only)
   key_vault_name = "kv-${var.environment}${var.project}${random_string.unique_suffix.result}1"
 
@@ -186,7 +186,7 @@ locals {
 
   # Private DNS Configuration
   private_dns_zone_id = {
-    for zone_name in var.private_dns_config.private_dns_zone_name : 
+    for zone_name in var.private_dns_config.private_dns_zone_name :
     zone_name => {
       id = "/subscriptions/${var.private_dns_config.subscription_id}/resourceGroups/${var.private_dns_config.resource_group}/providers/Microsoft.Network/privateDnsZones/${zone_name}"
     }

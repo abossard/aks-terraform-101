@@ -21,11 +21,11 @@ resource "azurerm_user_assigned_identity" "app_gateway" {
 }
 
 # Grant Application Gateway identity access to Key Vault
-resource "azurerm_role_assignment" "app_gateway_key_vault" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_user_assigned_identity.app_gateway.principal_id
-}
+ resource "azurerm_role_assignment" "app_gateway_key_vault" {
+   scope                = azurerm_key_vault.main.id
+   role_definition_name = "Key Vault Secrets User"
+   principal_id         = azurerm_user_assigned_identity.app_gateway.principal_id
+ }
 
 # Application Gateway
 resource "azurerm_application_gateway" "main" {
