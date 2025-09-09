@@ -70,6 +70,7 @@ resource "azurerm_data_protection_backup_vault" "app1" {
   datastore_type      = "VaultStore"
   redundancy          = "GeoRedundant"
   cross_region_restore_enabled = true
+  soft_delete = "On"
 
   identity {
     type = "SystemAssigned"
