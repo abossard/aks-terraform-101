@@ -308,6 +308,26 @@ variable "custom_dns_servers" {
   default     = ""
 }
 
+# SQL Variables
+
+# SQL Server Database SKU
+
+variable "sqldb_sku_name" {
+  description = "SKU name for the SQL Database"
+  type        = string
+  default     = "S1"
+}
+
+# SQL Server  Zone Redundancy
+
+variable "sqldb_zone_redundant" {
+  description = "Enable zone redundancy for SQL Server"
+  type        = bool
+  default     = false
+}
+
+# Variabile for managing the Short Term Retention Frequency of the SQL Server Backup
+
 variable "stb_backup_interval_hour" {
   description = "Short-term backup interval in hours for SQL Database"
   type        = number
@@ -317,6 +337,8 @@ variable "stb_backup_interval_hour" {
     error_message = "Backup interval must be between 12 or 24 hours."
   }
 }
+
+# Variabile for managing the Short Term Retention of the SQL Server Backup
 
 variable "stb_days_of_retention" {
   description = "Short-term backup retention period in days for SQL Database"
@@ -373,6 +395,16 @@ variable "ltr_immutable_backups_enabled" {
   description = "Enable immutable backups for long-term retention"
   type        = bool
   default     = false
+}
+
+variable "storage_replication_type" {
+  description = "Storage account replication type (LRS, GRS, RAGRS, ZRS)"
+  type        = string
+  default     = "LRS"
+  validation {
+    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS"], var.storage_replication_type)
+    error_message = "Storage replication type must be one of: LRS, GRS, RAGRS, ZRS."
+  }
 }
 
 ## Note: Applications are now defined per cluster (see variable "clusters").

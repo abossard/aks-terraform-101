@@ -229,8 +229,8 @@ resource "azurerm_mssql_database" "app" {
   server_id      = azurerm_mssql_server.main.id
   collation      = "SQL_Latin1_General_CP1_CI_AS"
   license_type   = "LicenseIncluded"
-  sku_name       = "S1"
-  zone_redundant = false
+  sku_name       = var.sqldb_sku_name
+  zone_redundant = var.sqldb_zone_redundant
 
   threat_detection_policy {
     state           = "Enabled"

@@ -107,6 +107,10 @@ private_dns_config = {
 # Define the DNS Server of the VNET
 custom_dns_servers = "192.168.0.4"
 
+# SQL Server/Database
+sqldb_sku_name       = "S1"
+sqldb_zone_redundant = false
+
 # SQL Short Term Backup Internal Hours and Retention Days
 stb_backup_interval_hour = "12"
 stb_days_of_retention    = "14"
@@ -119,3 +123,7 @@ ltr_week_of_year      = 1
 
 # SQL Immutable Backups
 ltr_immutable_backups_enabled = false
+
+# Application Custom App
+# Storage Account Replication Type
+storage_replication_type = "LRS"
