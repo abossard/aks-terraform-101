@@ -407,4 +407,10 @@ variable "storage_replication_type" {
   }
 }
 
+variable "app1_storage_account_containers" {
+  description = "List of storage account container names"
+  type        = list(string)
+  default     = ["test1", "test2", "test3"]
+}
+
 ## Note: Applications are now defined per cluster (see variable "clusters").

@@ -29,7 +29,7 @@ resource "azurerm_storage_account" "app1" {
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
   shared_access_key_enabled       = false
-  public_network_access_enabled   = false
+  public_network_access_enabled   = true
 
   tags = local.app_map["app1"].tags
 
@@ -48,7 +48,8 @@ data "azurerm_role_definition" "blob_data_contributor" {
 }
 
 resource "azurerm_storage_container" "app1" {
-  name                  = "test"
+  for_each              = toset(var.app1_storage_account_containers)
+  name                  = each.value
   storage_account_id    = azurerm_storage_account.app1.id
   container_access_type = "private"
 }
@@ -100,7 +101,7 @@ resource "azurerm_data_protection_backup_instance_blob_storage" "app1" {
   location           = azurerm_resource_group.main.location
   storage_account_id = azurerm_storage_account.app1.id
   backup_policy_id   = azurerm_data_protection_backup_policy_blob_storage.app1.id
-  storage_account_container_names = [azurerm_storage_container.app1.name]
+  storage_account_container_names = var.app1_storage_account_containers
   depends_on = [azurerm_role_assignment.app1_backup_vault, azurerm_storage_account.app1]
 }
 
