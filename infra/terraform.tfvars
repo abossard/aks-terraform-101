@@ -10,7 +10,7 @@ location_code = "gwc"
 
 # Network Configuration
 vnet_address_space = "10.32.0.0/16"
-pod_cidr           = "192.168.0.0/16"
+pod_cidr           = "10.200.0.0/16"
 service_cidr       = "172.16.0.0/16"
 dns_service_ip     = "172.16.0.10"
 
@@ -86,7 +86,7 @@ hub_vnet_config = {
   subscription_id       = "29977929-2412-48ea-88ec-71d0d1414410"
   resource_group        = "rg-else-hub-prd-gwc-001"
   vnet_name             = "vnet-else-hub-prd-gwc-001"
-  vnet_cidr             = "10.0.0.0/16"
+  vnet_cidr             = "192.168.0.0/23"
   allow_gateway_transit = false
   use_remote_gateways   = false
 }
