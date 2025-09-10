@@ -75,6 +75,7 @@ variable "clusters" {
     min_count   = number
     max_count   = number
     vm_size     = string
+    vm_size     = string
     applications = map(object({
       namespace = string
     }))
@@ -86,6 +87,16 @@ variable "clusters" {
       min_count   = 1
       max_count   = 3
       vm_size     = "Standard_D2s_v3"
+      projects = {
+        mynav = {
+          frontend = {namespace = "mynav-frontend"}
+          backend  = {namespace = "mynav-backend"}
+        }
+        lcmt = {
+          frontend = {namespace = "lcmt-frontend"}
+          backend  = {namespace = "lcmt-backend"}
+        }
+      }
       applications = {
         app1 = { namespace = "frontend" }
         app2 = { namespace = "frontend" }

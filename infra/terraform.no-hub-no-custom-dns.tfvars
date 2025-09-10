@@ -28,6 +28,9 @@ tags = {
   managedby          = "terraform"
 }
 
+- Product: MyNavigator
+  - Applications: Frontend and Backend
+
 clusters = {
   public = {
     name_suffix  = "public"
