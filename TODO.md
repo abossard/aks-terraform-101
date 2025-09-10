@@ -52,14 +52,11 @@
 - [ ] Istio Gateway/Service to Echo Service
 
 ## Network Policies
-- [✅] Andre: Default Network Policies
-- [wip] Andre: App Specific Policies (L7 FQDN)
+- [✅] Default Network Policies
+       (we posponed on cluster wide policies until it's supported from AKS natively (or maybe with Kyverno))
+- [wip] App Specific Policies (L7 FQDN)
 - [ ] Andre: Prepare UDR
 - [ ] Next time: Outbound Traffic (Hub Firewall)
-
-# POLICIES
-- [ ] Cluster Internal policies
-  - [ ] Default Policy in each namespace
 
 # CODE ORGANIZATION / REFACTORING
 - [ ] Extract Terraform into clear layer modules: core network, security, platform (AKS), per-app (new)
