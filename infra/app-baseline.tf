@@ -107,7 +107,7 @@ resource "azurerm_private_endpoint" "app_kv" {
 
   private_dns_zone_group {
     name                 = "kv-${each.key}-dns-zone-group"
-    private_dns_zone_ids = [local.private_dns_zone_id["privatelink.vaultcore.azure.net"].id]
+    private_dns_zone_ids = var.use_external_private_dns_zones ? [local.external_private_dns_zone_ids["key_vault"]] : [azurerm_private_dns_zone.main["key_vault"].id]
   }
 
   tags       = local.app_map[each.key].tags

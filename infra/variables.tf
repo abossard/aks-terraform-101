@@ -239,6 +239,23 @@ variable "enable_vnet_peering" {
   default     = false
 }
 
+# DNS / Private DNS Mode Switches
+variable "create_private_dns_zones" {
+  description = "Create private DNS zones locally (mutually exclusive with use_external_private_dns_zones)."
+  type        = bool
+  default     = true
+}
+
+variable "use_external_private_dns_zones" {
+  description = "Use externally managed private DNS zones (expects private_dns_config). Mutually exclusive with create_private_dns_zones."
+  type        = bool
+  default     = false
+  validation {
+    condition     = (var.create_private_dns_zones != var.use_external_private_dns_zones)
+    error_message = "Exactly one of create_private_dns_zones or use_external_private_dns_zones must be true (mutually exclusive)."
+  }
+}
+
 variable "hub_vnet_config" {
   description = "Hub VNet configuration for peering"
   type = object({
@@ -294,18 +311,17 @@ variable "private_dns_config" {
     private_dns_zone_name = map(string)
   })
   default = null
-  validation {
-    condition     = var.private_dns_config == null || (var.private_dns_config != null && length(var.private_dns_config.private_dns_zone_name) > 0)
-    error_message = "private_dns_zone_name must contain at least one DNS zone name when private_dns_config is provided."
-  }
-
 }
 
-# DNS Server of the Vnet
+## DNS Servers of the VNet (empty list => Azure provided DNS)
 variable "custom_dns_servers" {
-  description = "List of custom DNS servers for the VNet (IPv4 addresses). Leave empty to use Azure default DNS."
-  type        = string
-  default     = ""
+  description = "Custom DNS servers for the VNet (IPv4). Leave empty list to use Azure default DNS."
+  type        = list(string)
+  default     = []
+  validation {
+    condition     = alltrue([for ip in var.custom_dns_servers : can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", ip))])
+    error_message = "Each custom DNS server must be a valid IPv4 address."
+  }
 }
 
 # SQL Variables
@@ -405,6 +421,16 @@ variable "storage_replication_type" {
     condition     = contains(["LRS", "GRS", "RAGRS", "ZRS"], var.storage_replication_type)
     error_message = "Storage replication type must be one of: LRS, GRS, RAGRS, ZRS."
   }
+}
+
+# ------------------------------------------------------------
+# Optional Feature Flags
+# ------------------------------------------------------------
+variable "enable_backup" {
+  description = "Enable creation of Data Protection backup vault, policy and instance for app1 storage account"
+  type        = bool
+  # Enabled by default (user can set to false to skip all backup resources)
+  default     = true
 }
 
 variable "app1_storage_account_containers" {

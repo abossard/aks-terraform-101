@@ -92,7 +92,11 @@ hub_vnet_config = {
 }
 vnet_peering_name = "peer-vnet-else-hub-prd-gwc-001"
 
-# Private DNS Link configuration
+# Private DNS Mode (EXTERNAL shared hub zones)
+create_private_dns_zones       = false
+use_external_private_dns_zones = true
+
+# External Private DNS Link configuration
 private_dns_config = {
   subscription_id = "29977929-2412-48ea-88ec-71d0d1414410"
   resource_group  = "rg-else-dns-prd-gwc-001"
@@ -104,8 +108,8 @@ private_dns_config = {
   }
 }
 
-# Define the DNS Server of the VNET
-custom_dns_servers = "192.168.0.4"
+# Define the DNS Servers of the VNET (empty => Azure default). Keeping current single value for now.
+custom_dns_servers = ["192.168.0.4"]
 
 # SQL Server/Database
 sqldb_sku_name       = "S1"

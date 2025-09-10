@@ -386,7 +386,7 @@ output "app_sql_connection_info" {
 output "app_kv_private_fqdns" {
   description = "Per-app Key Vault Private Endpoint FQDNs (in the privatelink zone)"
   value = {
-    for a, kv_name in local.app_kv_name_map : a => "${kv_name}.${local.private_dns_zone_id["privatelink.vaultcore.azure.net"].id}"
+    for a, kv_name in local.app_kv_name_map : a => "${kv_name}.${local.effective_private_dns_zone_names["key_vault"]}"
   }
 }
 
@@ -410,6 +410,17 @@ output "pod_cidr" {
 output "service_cidr" {
   description = "Service CIDR for the AKS cluster"
   value       = var.service_cidr
+}
+
+# Private DNS Mode & Zones
+output "private_dns_mode" {
+  description = "Indicates whether local or external private DNS zones are used"
+  value       = var.use_external_private_dns_zones ? "external" : "local"
+}
+
+output "effective_private_dns_zones" {
+  description = "Effective private DNS zone names per logical service"
+  value       = local.effective_private_dns_zone_names
 }
 
 # Security Information

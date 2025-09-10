@@ -1,24 +1,24 @@
 # Security Layer
 # Azure Firewall, Key Vault, Private Endpoints
 
-# Private DNS Zones
-# resource "azurerm_private_dns_zone" "main" {
-#   for_each = local.private_dns_zones
+## Private DNS Zones (local mode)
+resource "azurerm_private_dns_zone" "main" {
+  for_each = var.create_private_dns_zones ? local.private_dns_zones : {}
 
-#   name                = each.value
-#   resource_group_name = azurerm_resource_group.main.name
-# }
+  name                = each.value
+  resource_group_name = azurerm_resource_group.main.name
+}
 
-# # VNet Links for DNS Zones
-# resource "azurerm_private_dns_zone_virtual_network_link" "main" {
-#   for_each = local.private_dns_zones
+## VNet Links for DNS Zones (local mode)
+resource "azurerm_private_dns_zone_virtual_network_link" "main" {
+  for_each = var.create_private_dns_zones ? local.private_dns_zones : {}
 
-#   name                  = "${each.key}-dns-link"
-#   resource_group_name   = azurerm_resource_group.main.name
-#   private_dns_zone_name = azurerm_private_dns_zone.main[each.key].name
-#   virtual_network_id    = azurerm_virtual_network.main.id
-#   registration_enabled  = false
-# }
+  name                  = "${each.key}-dns-link"
+  resource_group_name   = azurerm_resource_group.main.name
+  private_dns_zone_name = azurerm_private_dns_zone.main[each.key].name
+  virtual_network_id    = azurerm_virtual_network.main.id
+  registration_enabled  = false
+}
 
 # Azure Key Vault
 resource "azurerm_key_vault" "main" {
@@ -77,8 +77,8 @@ resource "azurerm_private_endpoint" "key_vault" {
   }
 
   private_dns_zone_group {
-    name                 = "kv-dns-zone-group"
-    private_dns_zone_ids = [local.private_dns_zone_id["privatelink.vaultcore.azure.net"].id]
+    name = "kv-dns-zone-group"
+    private_dns_zone_ids = var.use_external_private_dns_zones ? [local.external_private_dns_zone_ids["key_vault"]] : [azurerm_private_dns_zone.main["key_vault"].id]
   }
 
   tags = local.common_tags
@@ -134,8 +134,8 @@ resource "azurerm_private_endpoint" "storage" {
   }
 
   private_dns_zone_group {
-    name                 = "storage-${each.key}-dns-zone-group"
-    private_dns_zone_ids = [local.private_dns_zone_id["privatelink.blob.core.windows.net"].id]
+    name = "storage-${each.key}-dns-zone-group"
+    private_dns_zone_ids = var.use_external_private_dns_zones ? [local.external_private_dns_zone_ids[each.value.dns_zone]] : [azurerm_private_dns_zone.main[each.value.dns_zone].id]
   }
 
 }

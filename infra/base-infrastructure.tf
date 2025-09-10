@@ -54,7 +54,7 @@ resource "azurerm_virtual_network" "main" {
   location            = azurerm_resource_group.net.location
   resource_group_name = azurerm_resource_group.net.name
   address_space       = [var.vnet_address_space]
-  dns_servers         = [var.custom_dns_servers]
+  dns_servers         = length(var.custom_dns_servers) > 0 ? var.custom_dns_servers : null
   tags                = local.common_tags
   depends_on          = [azurerm_resource_group.main]
 }
