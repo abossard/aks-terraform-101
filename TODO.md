@@ -47,9 +47,6 @@
 - [✅] switch to Istio instead of nginx
 
 # AKS
-## Ingress/Istio
-- [ ] Echo Service
-- [ ] Istio Gateway/Service to Echo Service
 
 ## Network Policies
 - [✅] Default Network Policies (in: infra/k8s/default-networkpolicy.yaml)
@@ -65,6 +62,8 @@
 - [ ] Add Makefile or task script to standardize apply/plan flows (new)
 - [ ] Verify the depends_on usage is optimal (new)
 - [ ] remove all unused storage accounts (new)
+- [ ] Give App Identities SQL Permissions (new)
+- [ ] Remove the SQL Workload Identity (new)
 
 # DOCUMENTATION ALIGNMENT
 - [ ] Unify naming/style across *.md (architecture vs infra vs deployment) (new)

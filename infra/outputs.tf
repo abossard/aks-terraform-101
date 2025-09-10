@@ -108,16 +108,6 @@ output "aks_node_resource_groups" {
 
 # Workload Identity
 # Workload Identities
-output "workload_identities" {
-  description = "Workload identity information for each cluster"
-  value = {
-    for k, v in azurerm_user_assigned_identity.workload_identity : k => {
-      client_id    = v.client_id
-      principal_id = v.principal_id
-      name         = v.name
-    }
-  }
-}
 
 # Removed duplicate output - workload_identities already provides this information
 

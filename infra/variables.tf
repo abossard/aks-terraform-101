@@ -67,33 +67,42 @@ variable "kubernetes_version" {
   default     = "1.28.5"
 }
 
-# Multiple AKS Clusters Configuration
 variable "clusters" {
-  description = "AKS cluster configurations, including the applications that belong to each cluster. Applications must be defined under a single cluster (one owner)."
+  description = "(Option 2) AKS cluster configurations with applications as a map (app => { namespace = ... }). Currently informational; not yet used in resources."
   type = map(object({
-    name_suffix  = string
-    subnet_cidr  = string
-    min_count    = number
-    max_count    = number
-    vm_size      = string
-    applications = list(string)
+    name_suffix = string
+    subnet_cidr = string
+    min_count   = number
+    max_count   = number
+    vm_size     = string
+    applications = map(object({
+      namespace = string
+    }))
   }))
   default = {
     public = {
-      name_suffix  = "public"
-      subnet_cidr  = "10.240.0.0/24"
-      min_count    = 1
-      max_count    = 3
-      vm_size      = "Standard_D2s_v3"
-      applications = ["app1", "app2"]
+      name_suffix = "public"
+      subnet_cidr = "10.240.0.0/24"
+      min_count   = 1
+      max_count   = 3
+      vm_size     = "Standard_D2s_v3"
+      applications = {
+        app1 = { namespace = "frontend" }
+        app2 = { namespace = "frontend" }
+        app3 = { namespace = "frontendextra" }
+      }
     }
     private = {
-      name_suffix  = "private"
-      subnet_cidr  = "10.240.4.0/24"
-      min_count    = 1
-      max_count    = 2
-      vm_size      = "Standard_D2s_v3"
-      applications = ["api1", "api2"]
+      name_suffix = "private"
+      subnet_cidr = "10.240.4.0/24"
+      min_count   = 1
+      max_count   = 2
+      vm_size     = "Standard_D2s_v3"
+      applications = {
+        api1 = { namespace = "backend" }
+        api2 = { namespace = "backend" }
+        api3 = { namespace = "backendextra" }
+      }
     }
   }
 }
