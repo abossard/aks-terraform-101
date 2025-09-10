@@ -56,6 +56,19 @@
 - [ ] Next time: Outbound Traffic (Hub Firewall)
 
 # CODE ORGANIZATION / REFACTORING
+- [ ] use a project layer, to group apps into the same resource group (new)
+      ```
+      projects = {
+        mynav = {
+          frontend = {namespace = "mynav-frontend"}
+          backend  = {namespace = "mynav-backend"}
+        }
+        lcmt = {
+          frontend = {namespace = "lcmt-frontend"}
+          backend  = {namespace = "lcmt-backend"}
+        }
+      }
+      ```
 - [ ] Extract Terraform into clear layer modules: core network, security, platform (AKS), per-app (new)
 - [ ] Introduce a modules/README per module with inputs/outputs table (new)
 - [ ] Separate shared app baseline vs per-application resource groups logic (new)
