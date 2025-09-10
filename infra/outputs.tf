@@ -287,14 +287,6 @@ output "nginx_ingress_config" {
   }
 }
 
-# Rendered NginxIngressController manifests (per cluster)
-output "nginx_controller_manifest_files" {
-  description = "Paths to the generated NginxIngressController YAML files for each cluster"
-  value = {
-    for k, v in local_file.nginx_internal_controllers : k => v.filename
-  }
-}
-
 # Rendered per-cluster AKS cheatsheets
 output "aks_cheatsheets" {
   description = "Paths to the generated AKS cheatsheets (Markdown) for each cluster"
