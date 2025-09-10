@@ -35,7 +35,11 @@ clusters = {
     min_count    = 1
     max_count    = 3
     vm_size      = "Standard_D2s_v3"
-    applications = ["app1", "app2"]
+    applications = {
+      app1 = { namespace = "frontend" }
+      app2 = { namespace = "frontend" }
+      app3 = { namespace = "frontendextra" }
+    }
   }
   private = {
     name_suffix  = "private"
@@ -43,7 +47,11 @@ clusters = {
     min_count    = 1
     max_count    = 2
     vm_size      = "Standard_D2s_v3"
-    applications = ["api1", "api2"]
+    applications = {
+      api1 = { namespace = "backend" }
+      api2 = { namespace = "backend" }
+      api3 = { namespace = "backendextra" }
+    }
   }
 }
 
