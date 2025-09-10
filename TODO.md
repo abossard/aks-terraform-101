@@ -64,6 +64,7 @@
 - [ ] Separate shared app baseline vs per-application resource groups logic (new)
 - [ ] Add Makefile or task script to standardize apply/plan flows (new)
 - [ ] Verify the depends_on usage is optimal (new)
+- [ ] remove all unused storage accounts (new)
 
 # DOCUMENTATION ALIGNMENT
 - [ ] Unify naming/style across *.md (architecture vs infra vs deployment) (new)
