@@ -1,0 +1,173 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app1-frontend
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app1-backend
+---
+# App1 Frontend Deployment & Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1-fe
+  namespace: app1-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1-fe
+  template:
+    metadata:
+      labels:
+        app: app1-fe
+    spec:
+      containers:
+      - name: frontend
+        image: docker.io/library/nginx:1.27-alpine
+        ports:
+        - containerPort: 80
+        command: ["/bin/sh","-c"]
+        args:
+        - |
+          cat <<'EOF' > /usr/share/nginx/html/index.html
+          <html><body><h1>app1 Frontend</h1><p>Host: $(hostname)</p></body></html>
+          EOF
+          nginx -g 'daemon off;'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1-fe-svc
+  namespace: app1-frontend
+spec:
+  selector:
+    app: app1-fe
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 80
+
+---
+# App1 Backend Deployment & Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1-be
+  namespace: app1-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1-be
+  template:
+    metadata:
+      labels:
+        app: app1-be
+    spec:
+      containers:
+      - name: backend
+        image: hashicorp/http-echo:latest
+        args:
+        - "-listen=:8010"
+        - "-text=app1 backend sample"
+        ports:
+        - containerPort: 8010
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1-be-svc
+  namespace: app1-backend
+spec:
+  selector:
+    app: app1-be
+  ports:
+  - name: http
+    port: 8010
+    targetPort: 8010
+---
+# Istio Gateway
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: public-gateway
+  namespace: aks-istio-ingress
+spec:
+  selector:
+    istio: aks-istio-ingressgateway-internal
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - app1.yourdomain.com
+    - app1.api.yourdomain.com
+    - app2.yourdomain.com
+    - app2.api.yourdomain.com
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: istio-wildcard-cert
+    hosts:
+    - app1.yourdomain.com
+    - app1.api.yourdomain.com
+    - app2.yourdomain.com
+    - app2.api.yourdomain.com
+
+---
+# Virtual Services
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: app1-frontend-vs
+  namespace: aks-istio-ingress
+spec:
+  hosts:
+  - app1.yourdomain.com
+  gateways:
+  - public-gateway
+  http:
+  - route:
+    - destination:
+        host: app1-fe-svc.app1-frontend.svc.cluster.local
+        port:
+          number: 8080
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: app1-backend-vs
+  namespace: aks-istio-ingress
+spec:
+  hosts:
+  - app1.api.yourdomain.com
+  gateways:
+  - public-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: app1-be-svc.app1-backend.svc.cluster.local
+        port:
+          number: 8010
+---
+# Destination Rules
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: app1-fe-dr
+  namespace: aks-istio-ingress
+spec:
+  host: app1-fe-svc.app1-frontend.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE

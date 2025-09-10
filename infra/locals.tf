@@ -229,11 +229,11 @@ locals {
     data.azurerm_client_config.current.object_id
   )
 
-  # Applications: derived from clusters. Each app belongs to exactly one cluster.
   app_cluster_pairs = flatten([
     for ck, cv in var.clusters : [
-      for a in cv.applications : {
-        app         = lower(trimspace(a))
+      for app_name, app_cfg in cv.applications : {
+        app         = lower(trimspace(app_name))
+        namespace   = app_cfg.namespace
         cluster_key = ck
       }
     ]
@@ -248,6 +248,7 @@ locals {
   app_map = {
     for x in local.app_cluster_pairs : x.app => {
       cluster_key = x.cluster_key
+      namespace   = x.namespace
       short       = replace(replace(replace(x.app, "-", ""), "_", ""), " ", "")
       base        = "${x.app}-${var.environment}-${var.location_code}"
       tags        = merge(local.common_tags, { App = x.app, Cluster = x.cluster_key })

@@ -1,15 +1,6 @@
 # AKS Cluster Layer
 # AKS with CNI Overlay, Cilium, and Workload Identity
 
-# User-Assigned Managed Identity for Workloads
-resource "azurerm_user_assigned_identity" "workload_identity" {
-  for_each = var.clusters
-
-  name                = local.cluster_configs[each.key].workload_identity_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-}
-
 # User-Assigned Managed Identity for AKS control plane (required for custom network operations like ASVNI)
 resource "azurerm_user_assigned_identity" "control_plane_identity" {
   for_each = var.clusters
@@ -186,27 +177,6 @@ resource "azurerm_role_assignment" "aks_kubelet_network_contributor_vnet" {
   principal_id         = azurerm_kubernetes_cluster.main[each.key].kubelet_identity[0].object_id
 }
 
-# Grant Key Vault access to the workload identities
-resource "azurerm_role_assignment" "workload_identity_key_vault" {
-  for_each = var.clusters
-
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_user_assigned_identity.workload_identity[each.key].principal_id
-}
-
-# Grant Storage access to the workload identities
-resource "azurerm_role_assignment" "workload_identity_storage" {
-  for_each = var.clusters
-
-  scope                = azurerm_storage_account.main.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.workload_identity[each.key].principal_id
-}
-
-# Grant SQL Database access to the workload identities
-// Note: Shared SQL DB removed. If cluster-level identities need ARM-level SQL roles,
-// assign at the server scope or at specific app DB scopes as needed in the future.
 
 # Grant ACR access to AKS clusters (if ACR is enabled)
 resource "azurerm_role_assignment" "aks_acr_pull" {
@@ -226,30 +196,6 @@ resource "azurerm_role_assignment" "current_user_aks_rbac_cluster_admin" {
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
-# Federated Identity Credentials for each cluster
-resource "azurerm_federated_identity_credential" "default_service_account" {
-  for_each = var.clusters
-
-  name                = "fc-default-${var.environment}-${var.project}-${each.value.name_suffix}"
-  resource_group_name = azurerm_resource_group.main.name
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = azurerm_kubernetes_cluster.main[each.key].oidc_issuer_url
-  parent_id           = azurerm_user_assigned_identity.workload_identity[each.key].id
-  subject             = "system:serviceaccount:${var.app_namespace}:${var.app_service_account}"
-}
-
-
-resource "azurerm_federated_identity_credential" "csi_driver" {
-  for_each = var.clusters
-
-  name                = "fc-csi-${var.environment}-${var.project}-${each.value.name_suffix}"
-  resource_group_name = azurerm_resource_group.main.name
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = azurerm_kubernetes_cluster.main[each.key].oidc_issuer_url
-  parent_id           = azurerm_user_assigned_identity.workload_identity[each.key].id
-  subject             = "system:serviceaccount:kube-system:secrets-store-csi-driver"
-}
-
 # Kubernetes Resources removed - deploy manually after infrastructure is ready
 # Use the following commands after deployment:
 # 1. az aks get-credentials --resource-group rg-prod-aks101-eus2-001 --name aks-prod-aks101-eus2-001 --admin
@@ -264,27 +210,6 @@ locals {
 }
 
 data "azurerm_client_config" "tenant" {}
-
-locals {
-  service_account_manifests = {
-    for k, v in var.clusters : k => templatefile(
-      "${path.module}/k8s/serviceaccount.tmpl.yaml",
-      {
-        service_account_name        = local.service_account_name,
-        workload_identity_client_id = azurerm_user_assigned_identity.workload_identity[k].client_id,
-        tenant_id                   = data.azurerm_client_config.tenant.tenant_id,
-        namespace                   = var.app_namespace
-      }
-    )
-  }
-}
-
-resource "local_file" "service_accounts" {
-  for_each = local.service_account_manifests
-
-  content  = each.value
-  filename = "${path.module}/k8s/generated/${each.key}-serviceaccount.yaml"
-}
 
 # -----------------------------------------------------------------------------
 # Render per-cluster Default NetworkPolicy (baseline deny with controlled egress)

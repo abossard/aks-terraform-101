@@ -144,7 +144,8 @@ locals {
   # K8s-safe namespace and service account names per app
   app_k8s = {
     for a, v in local.app_map : a => {
-      namespace       = substr("app-${a}", 0, 63)
+      # Take namespace directly from app_map (already validated); truncate defensively to 63 chars
+      namespace       = substr(v.namespace, 0, 63)
       service_account = substr("wi-${a}", 0, 63)
     }
   }
@@ -168,31 +169,7 @@ locals {
 resource "local_file" "app_service_accounts" {
   for_each = local.app_sa_templates
   content  = each.value
-  filename = "${path.module}/k8s/generated/${local.app_map[each.key].cluster_key}-${each.key}-serviceaccount.yaml"
-}
-
-########################################
-# Per-App Demo Echo Deployment (YAML rendering)
-########################################
-
-// Render a simple echo server deployment + service + ingress per app
-locals {
-  app_echo_templates = {
-    for a, v in local.app_map : a => templatefile(
-      "${path.module}/k8s/echo-app.tmpl.yaml",
-      {
-        namespace          = local.app_k8s[a].namespace,
-        app_name           = a,
-        ingress_class_name = "nginx-internal"
-      }
-    )
-  }
-}
-
-resource "local_file" "app_echo_manifests" {
-  for_each = local.app_echo_templates
-  content  = each.value
-  filename = "${path.module}/k8s/generated/${local.app_map[each.key].cluster_key}-${each.key}-echo.yaml"
+  filename = "${path.module}/k8s/generated/${local.app_map[each.key].cluster_key}-${local.app_k8s[each.key].namespace}-${each.key}-serviceaccount.yaml"
 }
 
 ########################################
