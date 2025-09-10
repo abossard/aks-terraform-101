@@ -22,12 +22,12 @@ flowchart LR
 
       subgraph SNET_PUB["🔒 Public Cluster Zone: snet-public-${environment}-${location_code}-001\n(10.32.0.0/24)\nNSG: nsg-public-${environment}-${location_code}-001"]
         AKS_PUB["AKS Cluster: aks-${environment}-${project}-public-${location_code}-001\n- CNI Overlay + Cilium\n- OIDC & Workload Identity\n- Outbound: loadBalancer"]
-        NGINX_PUB["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.public.nginx_internal_ip"]
+  ISTIO_PUB["Istio Ingress Gateway (Internal LB)\nstatic IP: cluster_configs.public.nginx_internal_ip"]
       end
 
       subgraph SNET_BACK["🔒 Private Cluster Zone: snet-private-${environment}-${location_code}-001\n(10.32.4.0/24)\nNSG: nsg-private-${environment}-${location_code}-001"]
         AKS_BACK["AKS Cluster: aks-${environment}-${project}-private-${location_code}-001\n- CNI Overlay + Cilium\n- OIDC & Workload Identity\n- Outbound: loadBalancer"]
-        NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.private.nginx_internal_ip"]
+  ISTIO_BACK["Istio Ingress Gateway (Internal LB)\nstatic IP: cluster_configs.private.nginx_internal_ip"]
       end
 
       subgraph SNET_PE["🔒 Private Endpoints Zone: snet-pe-${environment}-${location_code}-001\n(10.240.3.0/24)\nNSG: nsg-pe-${environment}-${location_code}-001"]
@@ -79,12 +79,12 @@ flowchart LR
 
   %% Allowed Traffic flows (Green - Secure Paths)
   NET -->|"✅ HTTPS 80,443"| PIP_AGW --> AGW
-  AGW -->|"✅ HTTPS app.yourdomain.com\nNSG: AllowClusterSubnets"| NGINX_PUB
-  AGW -->|"✅ HTTPS api.yourdomain.com\nNSG: AllowClusterSubnets + WAF rules"| NGINX_BACK
+  AGW -->|"✅ HTTPS app.yourdomain.com\nNSG: AllowClusterSubnets"| ISTIO_PUB
+  AGW -->|"✅ HTTPS api.yourdomain.com\nNSG: AllowClusterSubnets + WAF rules"| ISTIO_BACK
 
   %% AKS internal routing to apps
-  NGINX_PUB --> AKS_PUB
-  NGINX_BACK --> AKS_BACK
+  ISTIO_PUB --> AKS_PUB
+  ISTIO_BACK --> AKS_BACK
 
   %% Inter-cluster Communication (Unidirectional)
   AKS_PUB -->|"✅ ALLOWED\nTCP 80,443\nNSG: AllowPublicToPrivateCluster\nPriority: 400"| AKS_BACK
@@ -296,12 +296,12 @@ flowchart LR
 
       subgraph SNET_PUB["Subnet: snet-public-${environment}-${location_code}-001\n(10.240.0.0/24)"]
         AKS_PUB["AKS Cluster: aks-${environment}-${project}-public-${location_code}-001\n- CNI Overlay + Cilium\n- OIDC & Workload Identity\n- Outbound: loadBalancer"]
-        NGINX_PUB["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.public.nginx_internal_ip"]
+  ISTIO_PUB["Istio Ingress Gateway (Internal LB)\nstatic IP: cluster_configs.public.nginx_internal_ip"]
       end
 
       subgraph SNET_BACK["Subnet: snet-private-${environment}-${location_code}-001\n(10.240.4.0/24)"]
         AKS_BACK["AKS Cluster: aks-${environment}-${project}-private-${location_code}-001\n- CNI Overlay + Cilium\n- OIDC & Workload Identity\n- Outbound: loadBalancer"]
-        NGINX_BACK["NGINX Ingress (Internal LB)\nstatic IP: cluster_configs.private.nginx_internal_ip"]
+  ISTIO_BACK["Istio Ingress Gateway (Internal LB)\nstatic IP: cluster_configs.private.nginx_internal_ip"]
       end
 
       subgraph SNET_PE["Subnet: snet-pe-${environment}-${location_code}-001\n(10.240.3.0/24)"]
@@ -348,12 +348,12 @@ flowchart LR
 
   %% Traffic flow
   NET --> PIP_AGW --> AGW
-  AGW -->|HTTPS app.yourdomain.com| NGINX_PUB
-  AGW -->|HTTPS api.yourdomain.com - WAF rules| NGINX_BACK
+  AGW -->|HTTPS app.yourdomain.com| ISTIO_PUB
+  AGW -->|HTTPS api.yourdomain.com - WAF rules| ISTIO_BACK
 
   %% AKS internal routing to apps
-  NGINX_PUB --> AKS_PUB
-  NGINX_BACK --> AKS_BACK
+  ISTIO_PUB --> AKS_PUB
+  ISTIO_BACK --> AKS_BACK
 
   %% Egress (conceptual) via Azure Firewall
   AKS_PUB -. egress .-> AZFW
@@ -421,7 +421,7 @@ flowchart LR
 
 ### What’s shown
 - Per Terraform: VNet and subnets for App Gateway, AKS clusters (public/private), Azure Firewall, and Private Endpoints
-- Ingress path: Internet → App Gateway (WAF) → NGINX Ingress (internal IP) → AKS pods
+- Ingress path: Internet → App Gateway (WAF) → Istio (internal IP) → AKS pods
 - Egress path: AKS nodes → Azure Firewall → Internet (policy-based; UDR association optional)
 - Private endpoints for Key Vault, Storage (blob/file), and SQL Server, with Private DNS zones linked to the VNet
 - Workload identities per cluster and RBAC to KV/Storage/SQL; App Gateway’s UAMI to Key Vault for TLS secrets

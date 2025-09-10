@@ -287,29 +287,24 @@ resource "local_file" "service_accounts" {
 }
 
 # -----------------------------------------------------------------------------
-# Render NginxIngressController YAML per cluster for the Web App Routing add-on
-# Uses a static internal IP and pins to the AKS subnet by name
+# Render per-cluster Default NetworkPolicy (baseline deny with controlled egress)
 # -----------------------------------------------------------------------------
 locals {
-  nginx_controller_manifests = {
+  default_network_policy_manifests = {
     for k, v in var.clusters : k => templatefile(
-      "${path.module}/k8s/nginx-internal-controller.tmpl.yaml",
+      "${path.module}/k8s/default-networkpolicy.tmpl.yaml",
       {
-        ingress_controller_name = "nginx-internal",
-        ingress_class_name      = "nginx-internal",
-        controller_name_prefix  = "nginx-internal",
-        internal_ip             = local.cluster_configs[k].nginx_internal_ip,
-        subnet_name             = local.cluster_configs[k].subnet_name
+        pe_subnet_cidr = local.pe_subnet_cidr
       }
     )
   }
 }
 
-resource "local_file" "nginx_internal_controllers" {
-  for_each = local.nginx_controller_manifests
+resource "local_file" "default_network_policy" {
+  for_each = local.default_network_policy_manifests
 
   content  = each.value
-  filename = "${path.module}/k8s/generated/${each.key}-nginx-internal-controller.yaml"
+  filename = "${path.module}/k8s/generated/${each.key}-default-networkpolicy.yaml"
 }
 
 # -----------------------------------------------------------------------------
@@ -353,7 +348,6 @@ locals {
       {
         cluster_name        = local.cluster_configs[k].aks_name,
         resource_group      = azurerm_resource_group.main.name,
-        nginx_manifest      = "${path.module}/k8s/generated/${k}-nginx-internal-controller.yaml",
         enable_asvni        = tostring(var.enable_api_server_vnet_integration),
         apiserver_subnet_id = var.enable_api_server_vnet_integration ? azurerm_subnet.apiserver[k].id : ""
         internal_ip         = local.cluster_configs[k].nginx_internal_ip,

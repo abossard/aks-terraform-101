@@ -19,6 +19,13 @@ az aks get-credentials \
     --name <aks-name>
 kubectl get nodes
 ```
+
+## Kubernetes cluster bootstrap
+- create service accounts (generated from infra/k8s/serviceaccount.tmpl.yaml)
+- add network policies (default namespace policy in infra/k8s/default-networkpolicy.yaml)
+- istio configuration (example in infra/k8s/examples/istio-multiapp-deployment.yaml)
+
+
 ## VNET Integration
 - check that you're using a supported region: https://learn.microsoft.com/azure/aks/api-server-vnet-integration
 - make sure that you have the respective providers registered (check with the az aks update command in the infra/k8s/generated/private-cluster-setup.sh script).
@@ -38,55 +45,3 @@ kubectl get nodes
         - `/v1` → `echo-v1-svc`
 - Cheatsheets
     - `infra/cheatsheets/generated/` — per-cluster quick commands and URLs
-
-## App Routing (internal only)
-
-- The repo generates an internal NGINX controller CR with annotations to use a private LoadBalancer in your AKS subnet.
-- Apply (if not already applied by your setup script):
-```bash
-kubectl apply -f infra/k8s/generated/<cluster>-nginx-internal-controller.yaml
-```
-- You can also make the default controller internal-only or disable it entirely:
-    - Internal: `az aks approuting update --resource-group <rg> --name <aks> --nginx Internal`
-    - None (disable): `az aks approuting update --resource-group <rg> --name <aks> --nginx None`
-
-## Test the ingress
-
-1) Deploy the example:
-```bash
-kubectl apply -f infra/k8s/examples/echo-server.yaml
-```
-2) Get the internal IP of the controller service:
-```bash
-kubectl -n app-routing-system get svc nginx-internal-0 -o jsonpath='{.status.loadBalancer.ingress[0].ip}{"\n"}'
-```
-3) Curl from a network that can reach the VNet IP:
-```bash
-curl -i http://<INTERNAL_IP>/
-curl -i http://<INTERNAL_IP>/v1
-```
-
-## Fast Terraform tips
-
-- Speed up plan/apply/destroy for dev loops:
-    - `export TF_CLI_ARGS_plan="-parallelism=30"`
-    - `export TF_CLI_ARGS_apply="-parallelism=30"`
-    - `export TF_CLI_ARGS_destroy="-parallelism=30"`
-- Consider `-refresh=false` for very short iterative loops (use with care).
-- Pre-register providers in Azure, then set `skip_provider_registration = true` in the azurerm provider.
-
-## Recent highlights (last 2 days)
-
-- Added example app: `infra/k8s/examples/echo-server.yaml` with `/` and `/v1` routes via `nginx-internal`.
-- Ensured AKS identities have Network Contributor on the VNet to allow internal LoadBalancer creation (fixes 403 on subnets/read).
-- Clarified internal-only App Routing usage and where to find generated manifests under `infra/k8s/generated/`.
-
-To see exact commits locally:
-```bash
-git --no-pager log --since="2 days ago" --date=local --pretty=format:"%h %ad %s" --name-status
-```
-
-## Troubleshooting
-
-- Internal LB pending: check events on the service for RBAC errors; ensure the AKS cluster identity has Network Contributor on the VNet.
-- Health probes blocked: add NSG rules allowing `AzureLoadBalancer` to the node ports (or 80/443 depending on setup) in the AKS subnet NSG.

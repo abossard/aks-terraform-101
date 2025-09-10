@@ -52,7 +52,7 @@
 - [ ] Istio Gateway/Service to Echo Service
 
 ## Network Policies
-- [✅] Default Network Policies
+- [✅] Default Network Policies (in: infra/k8s/default-networkpolicy.yaml)
        (we posponed on cluster wide policies until it's supported from AKS natively (or maybe with Kyverno))
 - [wip] App Specific Policies (L7 FQDN)
 - [ ] Andre: Prepare UDR

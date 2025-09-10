@@ -1,0 +1,38 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-with-ingress-and-dns-and-pe
+  labels:
+    app.kubernetes.io/part-of: baseline-security
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: aks-istio-ingress
+  egress:
+    # Allow DNS to kube-dns in kube-system
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow egress to Private Endpoint subnet (Terraform local: pe_subnet_cidr)
+    - to:
+        - ipBlock:
+            cidr: ${pe_subnet_cidr}
+      ports:
+        - protocol: TCP
+          port: 443
