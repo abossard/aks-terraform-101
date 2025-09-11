@@ -406,12 +406,12 @@ variable "ltr_immutable_backups_enabled" {
   default     = false
 }
 
-variable "storage_replication_type" {
+variable "app1_storage_replication_type" {
   description = "Storage account replication type (LRS, GRS, RAGRS, ZRS)"
   type        = string
   default     = "LRS"
   validation {
-    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS"], var.storage_replication_type)
+    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS"], var.app1_storage_replication_type)
     error_message = "Storage replication type must be one of: LRS, GRS, RAGRS, ZRS."
   }
 }

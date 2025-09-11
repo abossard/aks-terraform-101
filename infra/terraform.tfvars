@@ -88,6 +88,8 @@ clusters = {
   }
 }
 
+# Configuration if there is an Existing Hub in Place with Private DNS Zones
+# 
 # VNet Peering Configuration
 enable_vnet_peering = true
 hub_vnet_config = {
@@ -99,7 +101,6 @@ hub_vnet_config = {
   use_remote_gateways   = false
 }
 vnet_peering_name = "peer-vnet-else-hub-prd-gwc-001"
-
 # Private DNS Link configuration
 private_dns_config = {
   subscription_id = "29977929-2412-48ea-88ec-71d0d1414410"
@@ -111,27 +112,26 @@ private_dns_config = {
     sql_database = "privatelink.database.windows.net"
   }
 }
-
 # Define the DNS Server of the VNET
 custom_dns_servers = "192.168.0.4"
 
+# Define SQL Server Configurations and Backups Configuration for every database
+#
 # SQL Server/Database
 sqldb_sku_name       = "S1"
 sqldb_zone_redundant = false
-
 # SQL Short Term Backup Internal Hours and Retention Days
 stb_backup_interval_hour = "12"
 stb_days_of_retention    = "14"
-
 # SQL Long Term Backup Retention
 ltr_weekly_retention  = "P2W"
 ltr_monthly_retention = "PT0S"
 ltr_yearly_retention  = "PT0S"
 ltr_week_of_year      = 1
-
 # SQL Immutable Backups
 ltr_immutable_backups_enabled = false
 
-# Application Custom App
+# Application Customization
 # Storage Account Replication Type
-storage_replication_type = "LRS"
+app1_storage_replication_type = "LRS"
+app1_storage_account_containers = ["app1-container1", "app1-container2"]
