@@ -230,6 +230,16 @@ variable "enable_strict_nsg_outbound_deny" {
   }
 }
 
+variable "enable_fabric_powerbi_vm" {
+  description = "Enable creation of Fabric/PowerBI compute virtual machine"
+  type        = bool
+  default     = false
+  validation {
+    condition     = can(var.enable_fabric_powerbi_vm)
+    error_message = "enable_fabric_powerbi_vm must be true or false."
+  }
+}
+
 # Egress routing control
 variable "route_egress_through_firewall" {
   description = "Route AKS egress through Azure Firewall using UDR (true) or use load balancer SNAT (false)."
@@ -420,6 +430,13 @@ variable "app1_storage_account_containers" {
   description = "List of storage account container names"
   type        = list(string)
   default     = ["test1", "test2", "test3"]
+}
+
+# Bastion Network Configuration
+variable "bastion_subnet_cidr" {
+  description = "Bastion subnet CIDR"
+  type        = string
+  default     = "192.168.0.128/26"
 }
 
 ## Note: Applications are now defined per cluster (see variable "clusters").

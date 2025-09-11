@@ -18,14 +18,19 @@ locals {
   # Dedicated Network Components resource group name (single RG for all Network assets)
   net_resource_group_name = "rg-${var.environment}-${var.project}-net-${var.location_code}-001"
 
+  # Dedicated Shared Services resource group name (single RG for all Shared Services assets)
+  facu_resource_group_name = "rg-${var.environment}-${var.project}-facu-${var.location_code}-001"
+
   # Networking
   vnet_name                     = "vnet-${local.base_name}-001"
   app_gateway_subnet_name       = "snet-agw-${var.environment}-${var.location_code}-001"
   private_endpoints_subnet_name = "snet-pe-${var.environment}-${var.location_code}-001"
+  facu_subnet_name              = "snet-facu-${var.environment}-${var.location_code}-001"
 
   # Network Security Groups
   app_gateway_nsg_name = "nsg-agw-${var.environment}-${var.location_code}-001"
   pe_nsg_name          = "nsg-pe-${var.environment}-${var.location_code}-001"
+  facu_nsg_name        = "nsg-facu-${var.environment}-${var.location_code}-001"
 
   # Global resources
   log_analytics_name = "log-aks-${var.environment}-${var.location_code}-001"
@@ -92,13 +97,14 @@ locals {
   acr_name = "acr${var.environment}${var.project}${var.location_code}${random_string.unique_suffix.result}"
 
   # Subnet calculations
-  app_gateway_subnet_cidr = cidrsubnet(var.vnet_address_space, 8, 1) # 10.240.1.0/24
-  firewall_subnet_cidr    = cidrsubnet(var.vnet_address_space, 8, 2) # 10.240.2.0/24
-  pe_subnet_cidr          = cidrsubnet(var.vnet_address_space, 8, 3) # 10.240.3.0/24
+  app_gateway_subnet_cidr = cidrsubnet(var.vnet_address_space, 8, 1) # 10.32.1.0/24
+  firewall_subnet_cidr    = cidrsubnet(var.vnet_address_space, 8, 2) # 10.32.2.0/24
+  pe_subnet_cidr          = cidrsubnet(var.vnet_address_space, 8, 3) # 10.32.3.0/24
+  facu_subnet_cidr        = cidrsubnet(var.vnet_address_space, 8, 5) # 10.32.5.0/24
 
   # Automatic API server subnet allocation
   # Reserve a /24 for API server subnets at a high index to avoid collisions with typical subnets.
-  # With 10.240.0.0/16 => 10.240.200.0/24
+  # With 10.32.0.0/16 => 10.32.200.0/24
   apiserver_parent_cidr = cidrsubnet(var.vnet_address_space, 8, 200)
   # Deterministic ordering for per-cluster /27 allocations
   cluster_keys_sorted = sort(keys(var.clusters))

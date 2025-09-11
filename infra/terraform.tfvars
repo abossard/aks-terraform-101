@@ -63,11 +63,11 @@ tags = {
 }
 clusters = {
   public = {
-    name_suffix  = "public"
-    subnet_cidr  = "10.32.0.0/24"
-    min_count    = 1
-    max_count    = 3
-    vm_size      = "Standard_D2s_v3"
+    name_suffix = "public"
+    subnet_cidr = "10.32.0.0/24"
+    min_count   = 1
+    max_count   = 3
+    vm_size     = "Standard_D2s_v3"
     applications = {
       app1 = { namespace = "frontend" }
       app2 = { namespace = "frontend" }
@@ -75,11 +75,11 @@ clusters = {
     }
   }
   private = {
-    name_suffix  = "private"
-    subnet_cidr  = "10.32.4.0/24"
-    min_count    = 1
-    max_count    = 2
-    vm_size      = "Standard_D2s_v3"
+    name_suffix = "private"
+    subnet_cidr = "10.32.4.0/24"
+    min_count   = 1
+    max_count   = 2
+    vm_size     = "Standard_D2s_v3"
     applications = {
       api1 = { namespace = "backend" }
       api2 = { namespace = "backend" }
@@ -115,6 +115,10 @@ private_dns_config = {
 # Define the DNS Server of the VNET
 custom_dns_servers = "192.168.0.4"
 
+# Deploy the Fabric/PowerBI ComputeVM
+enable_fabric_powerbi_vm = true
+bastion_subnet_cidr = "192.168.0.128/26"
+
 # Define SQL Server Configurations and Backups Configuration for every database
 #
 # SQL Server/Database
@@ -133,5 +137,5 @@ ltr_immutable_backups_enabled = false
 
 # Application Customization
 # Storage Account Replication Type
-app1_storage_replication_type = "LRS"
+app1_storage_replication_type   = "LRS"
 app1_storage_account_containers = ["app1-container1", "app1-container2"]
