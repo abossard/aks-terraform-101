@@ -34,14 +34,28 @@
 - [✅] remove the private dns zones creation and modify the private endpoint in order to setup the private dns zone links to the existing private dns zones
 - [✅] change the configuration of the vnet in order to use the existing Firewall Ipv4 192.168.0.4 on the Hub as a DNS Server
 - [✅] managing the retention (short term and long term) of the SQL Server Backup
-- [check] create backup vault if there is a storage account blob (new)
-    - [check] backup vault must have his managed identity activated (new)
-    - [check] the system managed identity of each backup vault must be applyed with a specific role on the storage account in order to permit the backup to works (new)
+- [✅] create backup vault if there is a storage account blob (new)
+    - [✅] backup vault must have his managed identity activated (new)
+    - [✅] the system managed identity of each backup vault must be applyed with a specific role on the storage account in order to permit the backup to works (new)
     - [ ] policy must be managable (new)
 - [✅] add the system assign managed identity used by application gateway on the keyvault of each application as Keyvault Secret user in order to access the certificate of each app 
 - [ ] setup the entraID group as admin of SQL server as a variabile in input in order based on the environment. stage and prod must should have one group as admin defined, dev and test another (new)
 - [ ] define variables for setup the resource SKU (ex: application gateway zone redundancy, storage accout SKU, backup vault sku, aks node pool number, sku and zone redundancy) (new)
-- [ ] support destroy from terraform (new)
+- [ ] support the creation of two VM as PowerBI Gateway on two different Azure Zones (new)
+    - [ ] create the VMs with NIC on the subnet facu, not add any kind of public Ipv4, add a specific Disk for Storage
+    - [ ] vm must be create on two different Azure Availability Zones
+    - [ ] create a Recovery Service Vault for backupping the VMs with a GEO Redundant Vault
+    - [ ] Manage the recovery service vault backup policies trough the tfvars
+    - [ ] create a routing table in the vnet resource group in order to force the Subnet of the Fabric/PowerBI Gateway to pass trough the Azure Firewall
+- [ ] Support destroy from terraform (new)
+- [ ] Manage the SQL Backup Redundacy Type as Variable (new)
+- [ ] SQL Server support only EntraID Authentication (new)
+- [ ] SQL Server Activate System Assign Managed Identity for Fabric/PowerBI (new)
+- [ ] SQL Server Auduting and SQL Server Database Auditing must be forwarded to a specific log Analytics Workspace if needed (new)
+- [ ] Container Registry must be able to be reachable trough a Private Endpoint with Premium Tier (new)
+- [ ] The Log Analytics Workspace into the main resource group should receive the WAF logs by the Application Gateway and also Application Gateway Access Logs (new)
+
+
 
 ## INGRESS
 - [✅] switch to Istio instead of nginx
