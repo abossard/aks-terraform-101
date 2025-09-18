@@ -218,6 +218,7 @@ locals {
       for app_name, app_cfg in cv.applications : {
         app         = lower(trimspace(app_name))
         namespace   = app_cfg.namespace
+        igar        = app_cfg.igar
         cluster_key = ck
       }
     ]
@@ -235,7 +236,7 @@ locals {
       namespace   = x.namespace
       short       = replace(replace(replace(x.app, "-", ""), "_", ""), " ", "")
       base        = "${x.app}-${var.environment}-${var.location_code}"
-      tags        = merge(local.common_tags, { App = x.app, Cluster = x.cluster_key })
+      tags        = merge(local.common_tags, { application = x.app, igar = x.igar, cluster = x.cluster_key })
     }
   }
 
