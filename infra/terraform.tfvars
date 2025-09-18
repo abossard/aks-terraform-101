@@ -20,8 +20,8 @@ kubernetes_version = "1.31.9"
 # SQL Server Configuration (Auto-detected from current user)
 sql_admin_username = "sqladmin"
 # sql_admin_password is auto-generated (see secrets.tf)
-# sql_azuread_admin_login is auto-detected from current user
-# sql_azuread_admin_object_id is auto-detected from current user
+sql_group_admin_login           = "azure-enid-else-dbadmin"
+sql_group_admin_login_object_id = "d05c3f18-c242-4016-a3c3-369d82d41047"
 
 # Security Configuration (Auto-detected from current user)
 # security_email is auto-detected from current user
@@ -117,7 +117,7 @@ custom_dns_servers = "192.168.0.4"
 
 # Deploy the Fabric/PowerBI ComputeVM
 enable_fabric_powerbi_vm = true
-bastion_subnet_cidr = "192.168.0.128/26"
+bastion_subnet_cidr      = "192.168.0.128/26"
 
 # Define SQL Server Configurations and Backups Configuration for every database
 #

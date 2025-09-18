@@ -117,22 +117,22 @@ variable "sql_admin_username" {
 
 # SQL password is now auto-generated - no variable needed
 
-variable "sql_azuread_admin_login" {
+variable "sql_group_admin_login" {
   description = "Azure AD admin login for SQL Server (auto-detected from current user if not provided)"
   type        = string
-  default     = ""
+  default     = "admin@example.com"
   validation {
-    condition     = var.sql_azuread_admin_login == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.sql_azuread_admin_login))
+    condition     = var.sql_group_admin_login == "" || can(regex("^[a-zA-Z0-9._%+-]", var.sql_group_admin_login))
     error_message = "SQL Azure AD admin login must be empty (auto-detect) or a valid email address."
   }
 }
 
-variable "sql_azuread_admin_object_id" {
+variable "sql_group_admin_login_object_id" {
   description = "Azure AD admin object ID for SQL Server (auto-detected from current user if not provided)"
   type        = string
   default     = ""
   validation {
-    condition     = var.sql_azuread_admin_object_id == "" || can(regex("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", var.sql_azuread_admin_object_id))
+    condition     = var.sql_group_admin_login_object_id == "" || can(regex("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", var.sql_group_admin_login_object_id))
     error_message = "SQL Azure AD admin object ID must be empty (auto-detect) or a valid UUID format."
   }
 }

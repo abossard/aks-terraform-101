@@ -212,15 +212,6 @@ locals {
     "admin@example.com" # Default fallback if not provided
   )
 
-  detected_sql_admin_login = coalesce(
-    var.sql_azuread_admin_login,
-    local.detected_user_email
-  )
-
-  detected_sql_admin_object_id = coalesce(
-    var.sql_azuread_admin_object_id,
-    data.azurerm_client_config.current.object_id
-  )
 
   app_cluster_pairs = flatten([
     for ck, cv in var.clusters : [
