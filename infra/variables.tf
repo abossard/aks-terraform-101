@@ -75,7 +75,6 @@ variable "clusters" {
     min_count   = number
     max_count   = number
     vm_size     = string
-    vm_size     = string
     applications = map(object({
       namespace = string
       igar      = string

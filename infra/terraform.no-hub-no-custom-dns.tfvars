@@ -28,8 +28,8 @@ tags = {
   managedby          = "terraform"
 }
 
-- Product: MyNavigator
-  - Applications: Frontend and Backend
+# - Product: MyNavigator
+#   - Applications: Frontend and Backend
 
 clusters = {
   public = {
@@ -39,9 +39,9 @@ clusters = {
     max_count    = 3
     vm_size      = "Standard_D2s_v3"
     applications = {
-      app1 = { namespace = "frontend" }
-      app2 = { namespace = "frontend" }
-      app3 = { namespace = "frontendextra" }
+      app1 = { namespace = "frontend", igar = "APM0011392"   }
+      app2 = { namespace = "frontend", igar = "APM0011393"   }
+      app3 = { namespace = "frontendextra", igar = "APM0011394"   }
     }
   }
   private = {
@@ -51,9 +51,9 @@ clusters = {
     max_count    = 2
     vm_size      = "Standard_D2s_v3"
     applications = {
-      api1 = { namespace = "backend" }
-      api2 = { namespace = "backend" }
-      api3 = { namespace = "backendextra" }
+      api1 = { namespace = "backend", igar = "APM0011395" }
+      api2 = { namespace = "backend", igar = "APM0011396" }
+      api3 = { namespace = "backendextra", igar = "APM0011397" }
     }
   }
 }
