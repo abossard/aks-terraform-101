@@ -37,6 +37,13 @@ resource "azurerm_resource_group" "net" {
   tags     = local.common_tags
 }
 
+# Fabric/PowerBI Compute Resource Group (single RG for all Fabric/PowerBI assets)
+resource "azurerm_resource_group" "shared" {
+  name     = local.facu_resource_group_name
+  location = var.location
+  tags     = local.common_tags
+}
+
 # Log Analytics Workspace (needed early for monitoring)
 resource "azurerm_log_analytics_workspace" "main" {
   name                = local.log_analytics_name
@@ -131,6 +138,18 @@ resource "azurerm_subnet" "apiserver" {
     }
   }
   depends_on = [azurerm_virtual_network.main]
+}
+
+# Fabric/PowerBI Compute Subnet
+resource "azurerm_subnet" "facu" {
+  name                 = local.facu_subnet_name
+  resource_group_name  = azurerm_resource_group.net.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = [local.facu_subnet_cidr]
+
+  # Disable private endpoint network policies
+  private_endpoint_network_policies = "Disabled"
+  depends_on                        = [azurerm_virtual_network.main]
 }
 
 # Network Security Groups for AKS Clusters (Secure Configuration)
@@ -295,7 +314,7 @@ resource "azurerm_network_security_group" "clusters" {
     }
   }
 
-  depends_on = [azurerm_resource_group.main]
+  depends_on = [azurerm_resource_group.net]
 }
 
 # Network Security Group for Application Gateway Subnet (Secure Configuration)
@@ -391,7 +410,7 @@ resource "azurerm_network_security_group" "app_gateway" {
     }
   }
 
-  depends_on = [azurerm_resource_group.main]
+  depends_on = [azurerm_resource_group.net]
 }
 
 # Network Security Group for Private Endpoints Subnet (Secure Configuration)
@@ -463,7 +482,7 @@ resource "azurerm_network_security_group" "private_endpoints" {
     }
   }
 
-  depends_on = [azurerm_resource_group.main]
+  depends_on = [azurerm_resource_group.net]
 }
 
 # Associate NSGs with Cluster Subnets
@@ -569,7 +588,7 @@ resource "azurerm_network_security_group" "apiserver" {
     }
   }
 
-  depends_on = [azurerm_resource_group.main]
+  depends_on = [azurerm_resource_group.net]
 }
 
 # Associate NSGs with API Server Subnets
@@ -580,6 +599,63 @@ resource "azurerm_subnet_network_security_group_association" "apiserver" {
   network_security_group_id = azurerm_network_security_group.apiserver[each.key].id
   depends_on                = [azurerm_subnet.apiserver, azurerm_network_security_group.apiserver]
 }
+
+# Network Security Groups for Fabric/PowerBI Compute (Secure Configuration)
+resource "azurerm_network_security_group" "facu" {
+  name                = local.facu_nsg_name
+  location            = azurerm_resource_group.net.location
+  resource_group_name = azurerm_resource_group.net.name
+  tags                = local.common_tags
+
+  # INBOUND RULES
+  # Allow inbound from Azure Bastion
+  security_rule {
+    name                       = "Allow_RDP_3389_AzureBastionSubnet_Inbound"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "3389"
+    source_address_prefix      = var.bastion_subnet_cidr
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "Allow_SSH_22_AzureBastionSubnet_Inbound"
+    priority                   = 110
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = var.bastion_subnet_cidr
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "Deny_Any_Other_Traffic_Inbound"
+    priority                   = 900
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  depends_on = [azurerm_resource_group.net]
+}
+
+# Associate NSGs with FACU Subnets
+resource "azurerm_subnet_network_security_group_association" "facu" {
+  subnet_id                 = azurerm_subnet.facu.id
+  network_security_group_id = azurerm_network_security_group.facu.id
+  depends_on                = [azurerm_subnet.facu, azurerm_network_security_group.facu]
+}
+
+# VNet Peering to Hub VNet (if enabled)
 
 resource "azurerm_virtual_network_peering" "netpeer" {
   count = local.vnet_peering_enabled ? 1 : 0

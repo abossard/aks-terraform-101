@@ -20,8 +20,8 @@ kubernetes_version = "1.31.9"
 # SQL Server Configuration (Auto-detected from current user)
 sql_admin_username = "sqladmin"
 # sql_admin_password is auto-generated (see secrets.tf)
-# sql_azuread_admin_login is auto-detected from current user
-# sql_azuread_admin_object_id is auto-detected from current user
+sql_group_admin_login           = "azure-enid-else-dbadmin"
+sql_group_admin_login_object_id = "d05c3f18-c242-4016-a3c3-369d82d41047"
 
 # Security Configuration (Auto-detected from current user)
 # security_email is auto-detected from current user
@@ -63,31 +63,51 @@ tags = {
 }
 clusters = {
   public = {
-    name_suffix  = "public"
-    subnet_cidr  = "10.32.0.0/24"
-    min_count    = 1
-    max_count    = 3
-    vm_size      = "Standard_D2s_v3"
+    name_suffix = "public"
+    subnet_cidr = "10.32.0.0/24"
+    min_count   = 1
+    max_count   = 3
+    vm_size     = "Standard_D2s_v3"
     applications = {
-      app1 = { namespace = "frontend" }
-      app2 = { namespace = "frontend" }
-      app3 = { namespace = "frontendextra" }
+      app1 = {
+        namespace = "frontend"
+        igar      = "igar-app1"
+      }
+      app2 = {
+        namespace = "frontend"
+        igar      = "igar-app2"
+      }
+      app3 = {
+        namespace = "frontendextra"
+        igar      = "igar-app3"
+      }
     }
   }
   private = {
-    name_suffix  = "private"
-    subnet_cidr  = "10.32.4.0/24"
-    min_count    = 1
-    max_count    = 2
-    vm_size      = "Standard_D2s_v3"
+    name_suffix = "private"
+    subnet_cidr = "10.32.4.0/24"
+    min_count   = 1
+    max_count   = 2
+    vm_size     = "Standard_D2s_v3"
     applications = {
-      api1 = { namespace = "backend" }
-      api2 = { namespace = "backend" }
-      api3 = { namespace = "backendextra" }
+      api1 = {
+        namespace = "backend"
+        igar      = "igar-api1"
+      }
+      api2 = {
+        namespace = "backend"
+        igar      = "igar-api2"
+      }
+      api3 = {
+        namespace = "backendextra"
+        igar      = "igar-api3"
+      }
     }
   }
 }
 
+# Configuration if there is an Existing Hub in Place with Private DNS Zones
+# 
 # VNet Peering Configuration
 enable_vnet_peering = true
 hub_vnet_config = {
@@ -102,40 +122,29 @@ vnet_peering_name = "peer-vnet-else-hub-prd-gwc-001"
 
 # Private DNS Mode (EXTERNAL shared hub zones)
 create_private_dns_zones       = false
-use_external_private_dns_zones = true
+use_external_private_dns_zones = false
 
-# External Private DNS Link configuration
-private_dns_config = {
-  subscription_id = "29977929-2412-48ea-88ec-71d0d1414410"
-  resource_group  = "rg-else-dns-prd-gwc-001"
-  private_dns_zone_name = {
-    key_vault    = "privatelink.vaultcore.azure.net"
-    storage_blob = "privatelink.blob.core.windows.net"
-    storage_file = "privatelink.file.core.windows.net"
-    sql_database = "privatelink.database.windows.net"
-  }
-}
+# Deploy the Fabric/PowerBI ComputeVM
+enable_fabric_powerbi_vm = false
+bastion_subnet_cidr      = "192.168.0.128/26"
 
-# Define the DNS Servers of the VNET (empty => Azure default). Keeping current single value for now.
-custom_dns_servers = ["192.168.0.4"]
-
+# Define SQL Server Configurations and Backups Configuration for every database
+#
 # SQL Server/Database
 sqldb_sku_name       = "S1"
 sqldb_zone_redundant = false
-
 # SQL Short Term Backup Internal Hours and Retention Days
 stb_backup_interval_hour = "12"
 stb_days_of_retention    = "14"
-
 # SQL Long Term Backup Retention
 ltr_weekly_retention  = "P2W"
 ltr_monthly_retention = "PT0S"
 ltr_yearly_retention  = "PT0S"
 ltr_week_of_year      = 1
-
 # SQL Immutable Backups
 ltr_immutable_backups_enabled = false
 
-# Application Custom App
+# Application Customization
 # Storage Account Replication Type
-storage_replication_type = "LRS"
+app1_storage_replication_type   = "LRS"
+app1_storage_account_containers = ["app1-container1", "app1-container2"]

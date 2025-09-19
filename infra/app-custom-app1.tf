@@ -24,7 +24,7 @@ resource "azurerm_storage_account" "app1" {
   resource_group_name      = azurerm_resource_group.app["app1"].name
   location                 = azurerm_resource_group.main.location
   account_tier             = "Standard"
-  account_replication_type = var.storage_replication_type
+  account_replication_type = var.app1_storage_replication_type
 
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false

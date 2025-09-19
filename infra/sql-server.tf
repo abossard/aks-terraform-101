@@ -18,8 +18,9 @@ resource "azurerm_mssql_server" "main" {
 
   # Azure AD authentication with auto-detected admin
   azuread_administrator {
-    login_username = local.detected_sql_admin_login
-    object_id      = local.detected_sql_admin_object_id
+    login_username              = var.sql_group_admin_login
+    object_id                   = var.sql_group_admin_login_object_id
+    azuread_authentication_only = true
   }
 
   identity {

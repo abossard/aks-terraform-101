@@ -78,6 +78,7 @@ variable "clusters" {
     vm_size     = string
     applications = map(object({
       namespace = string
+      igar      = string
     }))
   }))
   default = {
@@ -98,9 +99,18 @@ variable "clusters" {
         }
       }
       applications = {
-        app1 = { namespace = "frontend" }
-        app2 = { namespace = "frontend" }
-        app3 = { namespace = "frontendextra" }
+        app1 = {
+          namespace = "frontend"
+          igar      = "default-igar-app1"
+        }
+        app2 = {
+          namespace = "frontend"
+          igar      = "default-igar-app2"
+        }
+        app3 = {
+          namespace = "frontendextra"
+          igar      = "default-igar-app3"
+        }
       }
     }
     private = {
@@ -110,9 +120,18 @@ variable "clusters" {
       max_count   = 2
       vm_size     = "Standard_D2s_v3"
       applications = {
-        api1 = { namespace = "backend" }
-        api2 = { namespace = "backend" }
-        api3 = { namespace = "backendextra" }
+        api1 = {
+          namespace = "backend"
+          igar      = "default-igar-api1"
+        }
+        api2 = {
+          namespace = "backend"
+          igar      = "default-igar-api2"
+        }
+        api3 = {
+          namespace = "backendextra"
+          igar      = "default-igar-api3"
+        }
       }
     }
   }
@@ -128,22 +147,22 @@ variable "sql_admin_username" {
 
 # SQL password is now auto-generated - no variable needed
 
-variable "sql_azuread_admin_login" {
+variable "sql_group_admin_login" {
   description = "Azure AD admin login for SQL Server (auto-detected from current user if not provided)"
   type        = string
-  default     = ""
+  default     = "admin@example.com"
   validation {
-    condition     = var.sql_azuread_admin_login == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.sql_azuread_admin_login))
+    condition     = var.sql_group_admin_login == "" || can(regex("^[a-zA-Z0-9._%+-]", var.sql_group_admin_login))
     error_message = "SQL Azure AD admin login must be empty (auto-detect) or a valid email address."
   }
 }
 
-variable "sql_azuread_admin_object_id" {
+variable "sql_group_admin_login_object_id" {
   description = "Azure AD admin object ID for SQL Server (auto-detected from current user if not provided)"
   type        = string
   default     = ""
   validation {
-    condition     = var.sql_azuread_admin_object_id == "" || can(regex("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", var.sql_azuread_admin_object_id))
+    condition     = var.sql_group_admin_login_object_id == "" || can(regex("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$", var.sql_group_admin_login_object_id))
     error_message = "SQL Azure AD admin object ID must be empty (auto-detect) or a valid UUID format."
   }
 }
@@ -238,6 +257,16 @@ variable "enable_strict_nsg_outbound_deny" {
   validation {
     condition     = can(var.enable_strict_nsg_outbound_deny)
     error_message = "Strict NSG outbound deny must be true or false."
+  }
+}
+
+variable "enable_fabric_powerbi_vm" {
+  description = "Enable creation of Fabric/PowerBI compute virtual machine"
+  type        = bool
+  default     = false
+  validation {
+    condition     = can(var.enable_fabric_powerbi_vm)
+    error_message = "enable_fabric_powerbi_vm must be true or false."
   }
 }
 
@@ -433,12 +462,12 @@ variable "ltr_immutable_backups_enabled" {
   default     = false
 }
 
-variable "storage_replication_type" {
+variable "app1_storage_replication_type" {
   description = "Storage account replication type (LRS, GRS, RAGRS, ZRS)"
   type        = string
   default     = "LRS"
   validation {
-    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS"], var.storage_replication_type)
+    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS"], var.app1_storage_replication_type)
     error_message = "Storage replication type must be one of: LRS, GRS, RAGRS, ZRS."
   }
 }
@@ -457,6 +486,13 @@ variable "app1_storage_account_containers" {
   description = "List of storage account container names"
   type        = list(string)
   default     = ["test1", "test2", "test3"]
+}
+
+# Bastion Network Configuration
+variable "bastion_subnet_cidr" {
+  description = "Bastion subnet CIDR"
+  type        = string
+  default     = "192.168.0.128/26"
 }
 
 ## Note: Applications are now defined per cluster (see variable "clusters").
