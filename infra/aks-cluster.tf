@@ -88,6 +88,14 @@ resource "azurerm_kubernetes_cluster" "main" {
     outbound_type       = var.route_egress_through_firewall ? "userDefinedRouting" : "loadBalancer"
   }
 
+  private_cluster_enabled = var.enable_api_server_vnet_integration
+
+  api_server_access_profile {
+    virtual_network_integration_enabled = var.enable_api_server_vnet_integration
+    subnet_id                          = azurerm_subnet.apiserver[each.key].id
+  }
+
+
   # Enable Azure Key Vault Secrets Provider (CSI Driver)
   key_vault_secrets_provider {
     secret_rotation_enabled  = var.enable_secret_rotation
